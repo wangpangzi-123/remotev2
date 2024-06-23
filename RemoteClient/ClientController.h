@@ -73,36 +73,17 @@ public:
 	//	}
 	//}
 
-	int SendCommandPacket(
+	bool SendCommandPacket(
+		HWND hWnd,	//数据包收到后， 需要应答的窗口
 		int nCmd, 
 		bool bAutoClose = true, 
 		BYTE* pData = NULL, 
-		size_t nLength = 0,
-		std::list<CPacket>* plstPackets = NULL)
+		size_t nLength = 0)
 	{
 		TRACE("%s nCmd = %d, tick = %llu\r\n",
 			__FUNCTION__, nCmd, GetTickCount64());
 
-		HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-		//SendPacket(CPacket(nCmd, pData, nLength, hEvent));
-		
-		std::list<CPacket> lstPackets;	// 服务器应答包
-		if (plstPackets == NULL)
-			plstPackets = &lstPackets;
-
-		TRACE("&lstPackets = %p\r\n", plstPackets);
-		CClientSocket::getInstance().SendPacket(CPacket(nCmd, pData, nLength, hEvent),
-			*plstPackets, bAutoClose);//客户端发送命令包
-		
-		CloseHandle(hEvent);	//回收事件句柄，防止资源耗尽
-
-		if (plstPackets->size() > 0)	//如果服务器回传了应答包
-		{
-			TRACE("%s nCmd = %d, tick = %llu\r\n",
-				__FUNCTION__, nCmd, GetTickCount64());
-			return plstPackets->front().sCmd;
-		}
-		return -1;
+		return CClientSocket::getInstance().SendPacket(hWnd, CPacket(nCmd, pData, nLength), bAutoClose);//客户端发送命令包
 	}
 
 	//int getImage(CImage& image)
