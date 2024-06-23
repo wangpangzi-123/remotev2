@@ -69,7 +69,7 @@ public:
 	afx_msg void OnDownloadFile();
 	afx_msg void OnDeleteFile();
 	afx_msg void OnRunFile();
-	afx_msg LRESULT OnSendPacket(WPARAM wParam, LPARAM lParam);
+	//afx_msg LRESULT OnSendPacket(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnBnClickedBtnStartWatch();
 	//afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnIpnFieldchangedIpaddressServ(NMHDR* pNMHDR, LRESULT* pResult);

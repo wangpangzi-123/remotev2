@@ -142,7 +142,7 @@ void CWatchDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
 		//pParent->SendMessage(WM_SEND_PACKET, 5 << 1 | 1, (LPARAM) & event);
 
 		CClientController* pController = CClientController::getInstance();
-		pController->SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
+		pController->SendCommandPacket(GetSafeHwnd(), 5, true, (BYTE*)&event, sizeof(event));
 		//CClientController::getInstance().SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
 
 
@@ -183,7 +183,7 @@ void CWatchDialog::OnLButtonDown(UINT nFlags, CPoint point)
 		//pParent->SendMessage(WM_SEND_PACKET, 5 << 1 | 1, (LPARAM) & event);
 
 		CClientController* pController = CClientController::getInstance();
-		pController->SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
+		pController->SendCommandPacket(GetSafeHwnd(), 5, true, (BYTE*)&event, sizeof(event));
 
 		//CClientController::getInstance().SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
 
@@ -209,7 +209,7 @@ void CWatchDialog::OnLButtonUp(UINT nFlags, CPoint point)
 		//pParent->SendMessage(WM_SEND_PACKET, 5 << 1 | 1, (LPARAM) & event);
 	
 		CClientController* pController = CClientController::getInstance();
-		pController->SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
+		pController->SendCommandPacket(GetSafeHwnd(), 5, true, (BYTE*)&event, sizeof(event));
 
 		//CClientController::getInstance().SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
 
@@ -236,7 +236,7 @@ void CWatchDialog::OnRButtonDblClk(UINT nFlags, CPoint point)
 
 
 		CClientController* pController = CClientController::getInstance();
-		pController->SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
+		pController->SendCommandPacket(GetSafeHwnd(), 5, true, (BYTE*)&event, sizeof(event));
 
 		//CClientController::getInstance().SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
 
@@ -260,7 +260,7 @@ void CWatchDialog::OnRButtonDown(UINT nFlags, CPoint point)
 		//pParent->SendMessage(WM_SEND_PACKET, 5 << 1 | 1, (LPARAM) & event);
 
 		CClientController* pController = CClientController::getInstance();
-		pController->SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
+		pController->SendCommandPacket(GetSafeHwnd(), 5, true, (BYTE*)&event, sizeof(event));
 
 		//CClientController::getInstance().SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
 
@@ -287,7 +287,7 @@ void CWatchDialog::OnRButtonUp(UINT nFlags, CPoint point)
 
 
 		CClientController* pController = CClientController::getInstance();
-		pController->SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
+		pController->SendCommandPacket(GetSafeHwnd(), 5, true, (BYTE*)&event, sizeof(event));
 
 		//CClientController::getInstance().SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
 
@@ -314,7 +314,7 @@ void CWatchDialog::OnMouseMove(UINT nFlags, CPoint point)
 
 
 		CClientController* pController = CClientController::getInstance();
-		pController->SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
+		pController->SendCommandPacket(GetSafeHwnd(), 5, true, (BYTE*)&event, sizeof(event));
 
 
 		//CClientController::getInstance().SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
@@ -342,7 +342,7 @@ void CWatchDialog::OnStnClickedWatch()
 	//pParent->SendMessage(WM_SEND_PACKET, 5 << 1 | 1, (LPARAM) &event);
 
 	CClientController* pController = CClientController::getInstance();
-	pController->SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
+	pController->SendCommandPacket(GetSafeHwnd(), 5, true, (BYTE*)&event, sizeof(event));
 
 	//CClientController::getInstance().SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
 
@@ -367,7 +367,7 @@ void CWatchDialog::OnBnClickedBtnLock()
 
 
 	CClientController* pController = CClientController::getInstance();
-	pController->SendCommandPacket(7);
+	pController->SendCommandPacket(GetSafeHwnd(), 7);
 	//CClientController::getInstance().SendCommandPacket(7);
 
 	//CRemoteClientDlg* pParent = (CRemoteClientDlg*)GetParent();
@@ -379,7 +379,7 @@ void CWatchDialog::OnBnClickedBtnUnlock()
 {
 
 	CClientController* pController = CClientController::getInstance();
-	pController->SendCommandPacket(8);
+	pController->SendCommandPacket(GetSafeHwnd(), 8);
 	//CClientController::getInstance().SendCommandPacket(8);
 
 

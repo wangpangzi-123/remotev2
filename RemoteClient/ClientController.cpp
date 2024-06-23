@@ -158,7 +158,7 @@ void CClientController::threadDownloadFile()
 	
 	
 	do {
-		int ret = SendCommandPacket(4, false, (BYTE*)(LPCSTR)m_strRemote, m_strRemote.GetLength());
+		int ret = SendCommandPacket(m_remoteDlg, 4, false, (BYTE*)(LPCSTR)m_strRemote, m_strRemote.GetLength());
 		//int ret = SendMessage(WM_SEND_PACKET, 4 << 1 | 0, (LPARAM)(LPCSTR)strFile);
 		if (ret < 0)
 		{
@@ -216,8 +216,9 @@ void CClientController::threadWatchData()
 		{
 			std::list<CPacket> lstPackets;
 			TRACE("&lstPackets = %p\r\n", &lstPackets);
-			int ret = SendCommandPacket(6, true, NULL, 0, &lstPackets);
-			//int ret = SendMessage(WM_SEND_PACKET, 6 << 1 | 0);
+			int ret = SendCommandPacket(m_watchDlg.GetSafeHwnd(), 6, true, NULL, 0);
+			//TODO:添加消息响应函数
+			//TODO;控制发送频率
 			if (ret == 6)
 			{
 				if (Tool::Bytes2Image(m_watchDlg.GetImage(), lstPackets.front().strData) == 0)

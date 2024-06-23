@@ -46,6 +46,7 @@ unsigned CClientSocket::threadEntry(void* arg)
 	return 0;
 }
 
+/*
 void CClientSocket::threadFunc()
 {
 
@@ -134,6 +135,7 @@ void CClientSocket::threadFunc()
 	closeClient();
 
 }
+*/
 
 void CClientSocket::threadFunc2()
 {
@@ -159,7 +161,7 @@ bool CClientSocket::SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed
 	std::string strOut;
 	pack.Data(strOut);
 
-	PostThreadMessage(m_nThreadID, WM_SEND_PACK, (WPARAM)new PACKET_DATA(strOut.c_str(), strOut.size(), nMode), (LPARAM)hWnd);
+	return PostThreadMessage(m_nThreadID, WM_SEND_PACK, (WPARAM)new PACKET_DATA(strOut.c_str(), strOut.size(), nMode), (LPARAM)hWnd);
 }
 
 void CClientSocket::SendPack(UINT nMsg, WPARAM wParam, LPARAM lParam)

@@ -90,14 +90,14 @@ void Dump_lt(const char* pData, size_t nSize)
 	OutputDebugStringA(strOut.c_str());
 }
 
-int CRemoteClientDlg::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData, size_t nLength)
-{
-	//return CClientController::getInstance().SendCommandPacket(nCmd, bAutoClose, pData, nLength);
-	
-	CClientController* pController = CClientController::getInstance();
-	return pController->SendCommandPacket(nCmd, bAutoClose, pData, nLength);
-
-}
+//int CRemoteClientDlg::SendCommandPacket(int nCmd, bool bAutoClose, BYTE* pData, size_t nLength)
+//{
+//	//return CClientController::getInstance().SendCommandPacket(nCmd, bAutoClose, pData, nLength);
+//	
+//	CClientController* pController = CClientController::getInstance();
+//	return pController->SendCommandPacket(nCmd, bAutoClose, pData, nLength);
+//
+//}
 
 BEGIN_MESSAGE_MAP(CRemoteClientDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
@@ -113,7 +113,7 @@ BEGIN_MESSAGE_MAP(CRemoteClientDlg, CDialogEx)
 	ON_COMMAND(ID_DOWNLOAD_FILE, &CRemoteClientDlg::OnDownloadFile)
 	ON_COMMAND(ID_DELETE_FILE, &CRemoteClientDlg::OnDeleteFile)
 	ON_COMMAND(ID_RUN_FILE, &CRemoteClientDlg::OnRunFile)
-	ON_MESSAGE(WM_SEND_PACKET, &CRemoteClientDlg::OnSendPacket)
+	//ON_MESSAGE(WM_SEND_PACKET, &CRemoteClientDlg::OnSendPacket)
 	ON_BN_CLICKED(IDC_BTN_START_WATCH, &CRemoteClientDlg::OnBnClickedBtnStartWatch)
 	ON_WM_TIMER()
 	ON_NOTIFY(IPN_FIELDCHANGED, IDC_IPADDRESS_SERV, &CRemoteClientDlg::OnIpnFieldchangedIpaddressServ)
@@ -223,7 +223,7 @@ HCURSOR CRemoteClientDlg::OnQueryDragIcon()
 void CRemoteClientDlg::OnBnClickedButton2()
 {
 	TRACE("OnBnClickedButton2 \r\n");
-	SendCommandPacket(1981);
+	CClientController::getInstance()->SendCommandPacket(GetSafeHwnd(), 1981);
 }
 
 
@@ -235,7 +235,7 @@ void CRemoteClientDlg::OnBnClickedBtnFileinfo()
 	std::list<CPacket> lstPackets;	
 	CClientController* pController = CClientController::getInstance();
 	//int ret = CClientController::getInstance().SendCommandPacket(1);
-	int ret = pController->SendCommandPacket(1, true, NULL, 0, &lstPackets);
+	int ret = pController->SendCommandPacket(GetSafeHwnd(), 1, true, NULL, 0);
 	if (ret == -1 || (lstPackets.size() <= 0))
 	{
 		AfxMessageBox(_T("命令处理失败！！！"));
@@ -275,7 +275,7 @@ void CRemoteClientDlg::LoadFileCurrent()
 	CClientController* pController = CClientController::getInstance();
 
 	std::list<CPacket> lstPackets;
-	int nCmd = pController->SendCommandPacket(2, false, (BYTE*)(LPCTSTR)strPath, strPath.GetLength(), &lstPackets);
+	int nCmd = pController->SendCommandPacket(GetSafeHwnd(), 2, false, (BYTE*)(LPCTSTR)strPath, strPath.GetLength());
 
 	//int nCmd = CClientController::getInstance().SendCommandPacket(2, false, (BYTE*)(LPCTSTR)strPath, strPath.GetLength());
 	
@@ -333,7 +333,7 @@ void CRemoteClientDlg::LoadFileInfo()
 	
 	
 	std::list<CPacket> lstPackets;
-	int nCmd = pController->SendCommandPacket(2, false, (BYTE*)(LPCTSTR)strPath, strPath.GetLength(), &lstPackets);
+	int nCmd = pController->SendCommandPacket(GetSafeHwnd(),2, false, (BYTE*)(LPCTSTR)strPath, strPath.GetLength());
 	if (lstPackets.size() > 0)
 	{
 		std::list<CPacket>::iterator it = lstPackets.begin();
@@ -486,7 +486,7 @@ void CRemoteClientDlg::OnDeleteFile()
 	strFile = strPath + strFile;
 	//int ret = SendCommandPacket(9, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 	CClientController* pController = CClientController::getInstance();
-	int ret = pController->SendCommandPacket(9, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+	int ret = pController->SendCommandPacket(GetSafeHwnd(), 9, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 
 	//int ret = CClientController::getInstance().SendCommandPacket(9, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 
@@ -510,7 +510,7 @@ void CRemoteClientDlg::OnRunFile()
 	
 	//int ret = SendCommandPacket(3, true, (BYTE *)(LPCSTR)strFile, strFile.GetLength());
 	CClientController* pController = CClientController::getInstance();
-	int ret = pController->SendCommandPacket(3, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+	int ret = pController->SendCommandPacket(GetSafeHwnd(), 3, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 
 	//int ret = CClientController::getInstance().SendCommandPacket(3, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 	
@@ -521,48 +521,48 @@ void CRemoteClientDlg::OnRunFile()
 	}
 }
 
-LRESULT CRemoteClientDlg::OnSendPacket(WPARAM wParam, LPARAM lParam)
-{
-	int ret = 0;
-	int cmd = wParam >> 1;
-	CClientController* pController = CClientController::getInstance();
-	switch (cmd)
-	{
-		case 4:
-		{
-			CString strFile = (LPCSTR)lParam;
-			
-			//ret = CClientController::getInstance().SendCommandPacket(cmd, wParam & 1,
-			//	(BYTE*)(LPCSTR)strFile, strFile.GetLength());
-
-			ret = pController->SendCommandPacket(cmd, wParam & 1, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
-		}
-		break;
-
-		case 5:
-		{
-			//ret = CClientController::getInstance().SendCommandPacket(cmd, wParam & 1, (BYTE*)lParam, sizeof(MOUSEEV));
-			ret = pController->SendCommandPacket(cmd, wParam & 1,
-				(BYTE*)lParam, sizeof(MOUSEEV));
-		}
-		break;
-	
-		case 6:
-		case 7:
-		case 8:
-		{
-			//ret = SendCommandPacket(cmd, wParam & 1, NULL, 0);
-			//ret = CClientController::getInstance().SendCommandPacket(cmd, wParam & 1, NULL, 0);
-			ret = pController->SendCommandPacket(cmd, wParam & 1, NULL, 0);
-		}
-		break;
-		
-		default:
-			ret = -1;
-	}
-
-	return ret;
-}
+//LRESULT CRemoteClientDlg::OnSendPacket(WPARAM wParam, LPARAM lParam)
+//{
+//	int ret = 0;
+//	int cmd = wParam >> 1;
+//	CClientController* pController = CClientController::getInstance();
+//	switch (cmd)
+//	{
+//		case 4:
+//		{
+//			CString strFile = (LPCSTR)lParam;
+//			
+//			//ret = CClientController::getInstance().SendCommandPacket(cmd, wParam & 1,
+//			//	(BYTE*)(LPCSTR)strFile, strFile.GetLength());
+//
+//			ret = pController->SendCommandPacket(cmd, wParam & 1, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
+//		}
+//		break;
+//
+//		case 5:
+//		{
+//			//ret = CClientController::getInstance().SendCommandPacket(cmd, wParam & 1, (BYTE*)lParam, sizeof(MOUSEEV));
+//			ret = pController->SendCommandPacket(cmd, wParam & 1,
+//				(BYTE*)lParam, sizeof(MOUSEEV));
+//		}
+//		break;
+//	
+//		case 6:
+//		case 7:
+//		case 8:
+//		{
+//			//ret = SendCommandPacket(cmd, wParam & 1, NULL, 0);
+//			//ret = CClientController::getInstance().SendCommandPacket(cmd, wParam & 1, NULL, 0);
+//			ret = pController->SendCommandPacket(cmd, wParam & 1, NULL, 0);
+//		}
+//		break;
+//		
+//		default:
+//			ret = -1;
+//	}
+//
+//	return ret;
+//}
 
 
 void CRemoteClientDlg::OnBnClickedBtnStartWatch()
