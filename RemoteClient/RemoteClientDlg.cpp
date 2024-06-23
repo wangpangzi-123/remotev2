@@ -118,6 +118,8 @@ BEGIN_MESSAGE_MAP(CRemoteClientDlg, CDialogEx)
 	ON_WM_TIMER()
 	ON_NOTIFY(IPN_FIELDCHANGED, IDC_IPADDRESS_SERV, &CRemoteClientDlg::OnIpnFieldchangedIpaddressServ)
 	ON_EN_CHANGE(IDC_EDIT_PORT, &CRemoteClientDlg::OnEnChangeEditPort)
+	
+	ON_MESSAGE(WM_SEND_PACK_ACK, &CRemoteClientDlg::OnSendPackAck)
 END_MESSAGE_MAP()
 
 
@@ -241,27 +243,6 @@ void CRemoteClientDlg::OnBnClickedBtnFileinfo()
 		AfxMessageBox(_T("命令处理失败！！！"));
 		return;
 	}
-	CPacket& head = lstPackets.front();
-	std::string drivers = head.strData;
-	std::string dr;
-	m_Tree.DeleteAllItems();
-	OutputDebugString(drivers.c_str());
-	TRACE("drivers.size() = %d\r\n", drivers.size());
-
-	size_t pos = 0;
-	while ((pos = drivers.find(',')) != std::string::npos)
-	{
-		dr = drivers.substr(0, pos);
-		TRACE("dr = %s\r\n", dr.c_str());
-		dr += ":";
-		HTREEITEM hTemp = m_Tree.InsertItem(dr.c_str(), TVI_ROOT, TVI_LAST);
-		m_Tree.InsertItem(NULL, hTemp, TVI_LAST);
-		drivers.erase(0, pos + 1);
-	}
-	dr = drivers.substr(0, 1);
-	dr += ":";
-	HTREEITEM hTemp = m_Tree.InsertItem(dr.c_str(), TVI_ROOT, TVI_LAST);
-	m_Tree.InsertItem(NULL, hTemp, TVI_LAST);
 }
 
 
@@ -361,37 +342,6 @@ void CRemoteClientDlg::LoadFileInfo()
 
 		}
 	}
-	//int nCmd = CClientController::getInstance().SendCommandPacket(2, false, (BYTE*)(LPCTSTR)strPath, strPath.GetLength());
-	
-	//PFILEINFO pInfo = (PFILEINFO)CClientSocket::getInstance().getPacket().strData.c_str();
-
-	//while (pInfo->HasNext)
-	//{
-	//	//TRACE("lt:   [%s] is dir %d\r\n", pInfo->szFileName, pInfo->IsDirectory);
-	//	if (pInfo->IsDirectory)
-	//	{
-	//		if (CString(pInfo->szFileName) == "." || (CString(pInfo->szFileName) == ".."))
-	//		{
-	//			int cmd = CClientSocket::getInstance().dealCommand();
-	//			TRACE("ack : %d\r\n", cmd);
-	//			if (cmd < 0) break;
-	//			pInfo = (PFILEINFO)CClientSocket::getInstance().getPacket().strData.c_str();
-	//			continue;
-	//		}
-	//		TRACE("directory name: %s\r\n", pInfo->szFileName);
-	//		HTREEITEM hTemp = m_Tree.InsertItem(pInfo->szFileName, hTreeSelected, TVI_LAST);
-	//		m_Tree.InsertItem("", hTemp, TVI_LAST);
-	//	}
-	//	else
-	//	{
-	//		m_List.InsertItem(0, pInfo->szFileName);
-	//	}
-	//
-	//	int cmd = CClientSocket::getInstance().dealCommand();
-	//	TRACE("ack : %d\r\n", cmd);
-	//	if (cmd < 0) break;
-	//	pInfo = (PFILEINFO)CClientSocket::getInstance().getPacket().strData.c_str();
-	//}
 }
 
 CString CRemoteClientDlg::GetPath(HTREEITEM hTree)
@@ -507,18 +457,71 @@ void CRemoteClientDlg::OnRunFile()
 	CString strFile = m_List.GetItemText(nSelected, 0);
 	strFile = strPath + strFile;
 	TRACE("strFile = %s\r\n", strFile);
-	
-	//int ret = SendCommandPacket(3, true, (BYTE *)(LPCSTR)strFile, strFile.GetLength());
+
 	CClientController* pController = CClientController::getInstance();
 	int ret = pController->SendCommandPacket(GetSafeHwnd(), 3, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
 
-	//int ret = CClientController::getInstance().SendCommandPacket(3, true, (BYTE*)(LPCSTR)strFile, strFile.GetLength());
-	
-	
 	if (ret < 0)
 	{
 		AfxMessageBox("打开文件失败！\r\n");
 	}
+}
+
+LRESULT CRemoteClientDlg::OnSendPackAck(WPARAM wParam, LPARAM lParam)
+{
+	if (lParam == 0)
+	{
+		CPacket* pPacket = (CPacket*)wParam;
+		if (pPacket != NULL)
+		{
+			switch (pPacket->sCmd)
+			{
+			case 1:
+			{
+				CPacket& head = *pPacket;
+				std::string drivers = head.strData;
+				std::string dr;
+				m_Tree.DeleteAllItems();
+				OutputDebugString(drivers.c_str());
+				TRACE("drivers.size() = %d\r\n", drivers.size());
+
+				size_t pos = 0;
+				while ((pos = drivers.find(',')) != std::string::npos)
+				{
+					dr = drivers.substr(0, pos);
+					TRACE("dr = %s\r\n", dr.c_str());
+					dr += ":";
+					HTREEITEM hTemp = m_Tree.InsertItem(dr.c_str(), TVI_ROOT, TVI_LAST);
+					m_Tree.InsertItem(NULL, hTemp, TVI_LAST);
+					drivers.erase(0, pos + 1);
+				}
+				dr = drivers.substr(0, 1);
+				dr += ":";
+				HTREEITEM hTemp = m_Tree.InsertItem(dr.c_str(), TVI_ROOT, TVI_LAST);
+				m_Tree.InsertItem(NULL, hTemp, TVI_LAST);
+			}
+			break;
+
+			case 5:
+			case 7:
+			case 8:
+			default:
+				break;
+			}
+		}
+	}
+	else if (lParam < 0)
+	{
+		//错误处理
+
+	}
+	else if (lParam > 0)
+	{
+		//对方关闭套接字
+
+	}
+	return 0;
+	return 0;
 }
 
 //LRESULT CRemoteClientDlg::OnSendPacket(WPARAM wParam, LPARAM lParam)

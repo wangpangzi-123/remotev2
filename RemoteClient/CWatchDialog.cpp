@@ -46,15 +46,66 @@ BEGIN_MESSAGE_MAP(CWatchDialog, CDialog)
 	ON_WM_LBUTTONDBLCLK()
 	ON_BN_CLICKED(IDC_BTN_LOCK, &CWatchDialog::OnBnClickedBtnLock)
 	ON_BN_CLICKED(IDC_BTN_UNLOCK, &CWatchDialog::OnBnClickedBtnUnlock)
+	ON_MESSAGE(WM_SEND_PACK_ACK, &CWatchDialog::OnSendPackAck)
 END_MESSAGE_MAP()
 
+
+LRESULT CWatchDialog::OnSendPackAck(WPARAM wParam, LPARAM lParam)
+{
+	if (lParam == 0)
+	{
+		CPacket* pPacket = (CPacket*)wParam;
+		if (pPacket != NULL)
+		{
+			switch (pPacket->sCmd)
+			{
+			case 6:	
+			{
+				if (m_isFull == true)
+				{
+					Tool::Bytes2Image(m_image, pPacket->strData);
+					CRect rect;
+					m_picture.GetWindowRect(rect);
+					m_nObjHeight = m_image.GetHeight();
+					m_nObjWidth = m_image.GetWidth();
+					m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0,
+						rect.Width(), rect.Height());
+					TRACE("更新图片完成 %d %d %08X\r\n", m_nObjWidth, m_nObjHeight,
+						(HBITMAP)m_image);
+					m_picture.InvalidateRect(NULL);
+					m_image.Destroy();
+					m_isFull = false;
+				}
+				break;
+			}
+
+			case 5:
+			case 7:
+			case 8:
+			default:
+			break;
+			}
+		}
+	}
+	else if (lParam < 0)
+	{
+		//错误处理
+
+	}
+	else if (lParam > 0)
+	{
+		//对方关闭套接字
+
+	}
+	return 0;
+}
 
 BOOL CWatchDialog::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
 	// TODO:  在此添加额外的初始化
-	SetTimer(0, 45, NULL);
+	//SetTimer(0, 45, NULL);
 	return TRUE;  // return TRUE unless you set the focus to a control
 
 }
@@ -91,39 +142,27 @@ CPoint CWatchDialog::UserPoint2RemoteScreenPoint(CPoint& point, bool isScreen)
 void CWatchDialog::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
-	if (nIDEvent == 0)
-	{
-		//CRemoteClientDlg* pParent = (CRemoteClientDlg*) GetParent();
-		CClientController* pParent = (CClientController*) GetParent();
-		if (m_isFull)
-		{
-			CRect rect;
-			m_picture.GetWindowRect(rect);
-			//pParent->GetImage().BitBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0, SRCCOPY);
-			//CImage image;
-			//pParent->getImage(image);
+	// 
+	//if (nIDEvent == 0)
+	//{
+	//	//CRemoteClientDlg* pParent = (CRemoteClientDlg*) GetParent();
+	//	CClientController* pParent = (CClientController*) GetParent();
+	//	if (m_isFull)
+	//	{
+	//		CRect rect;
+	//		m_picture.GetWindowRect(rect);
+	//		m_nObjHeight = m_image.GetHeight();
+	//		m_nObjWidth = m_image.GetWidth();
+	//		m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0,
+	//										rect.Width(), rect.Height());
+	//		TRACE("更新图片完成 %d %d %08X\r\n", m_nObjWidth, m_nObjHeight,
+	//			(HBITMAP)m_image);
+	//		m_picture.InvalidateRect(NULL);
+	//		m_image.Destroy();
+	//		m_isFull = false;
+	//	}
+	//}
 
-			m_nObjHeight = m_image.GetHeight();
-			m_nObjWidth = m_image.GetWidth();
-			//if (m_nObjHeight != pParent->GetImage().GetHeight() || m_nObjWidth == pParent->GetImage().GetWidth())
-			//{
-			//	m_nObjHeight = pParent->GetImage().GetHeight();
-			//	m_nObjWidth = pParent->GetImage().GetWidth();
-			//}
-			m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0,
-											rect.Width(), rect.Height());
-			//TRACE("getimage width : %d, height : %d\r\n", m_nObjHeight, m_nObjWidth);
-			
-
-			TRACE("更新图片完成 %d %d %08X\r\n", m_nObjWidth, m_nObjHeight,
-				(HBITMAP)m_image);
-
-
-			m_picture.InvalidateRect(NULL);
-			m_image.Destroy();
-			m_isFull = false;
-		}
-	}
 	CDialog::OnTimer(nIDEvent);
 }
 

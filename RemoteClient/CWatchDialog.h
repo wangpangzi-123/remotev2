@@ -1,6 +1,9 @@
 ﻿#pragma once
 #include "afxdialogex.h"
 
+#ifndef WM_SEND_PACK_ACK
+#define WM_SEND_PACK_ACK (WM_USER + 2)
+#endif
 
 // CWatchDialog 对话框
 
@@ -49,6 +52,7 @@ public:
 	CPoint UserPoint2RemoteScreenPoint(CPoint& point, bool isScreen = false);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	CStatic m_picture;
+	afx_msg LRESULT OnSendPackAck(WPARAM wParam, LPARAM lParam);
 	virtual BOOL OnInitDialog();
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
