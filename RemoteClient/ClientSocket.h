@@ -12,8 +12,8 @@
 //声明 在 .cpp 
 
 
-#define WM_SEND_PACK (WM_USER + 1)
-
+#define WM_SEND_PACK		(WM_USER + 1)	//发送包数据
+#define WM_SEND_PACK_ACK	(WM_USER + 2)	
 
 
 #pragma pack(push)
@@ -23,7 +23,7 @@ class CPacket
 public:
 	CPacket() : sHead(0), nLength(0), sCmd(0), sSum(0) {}
 
-	CPacket(WORD nCmd, const BYTE* pData, size_t nSize, HANDLE hEvent)
+	CPacket(WORD nCmd, const BYTE* pData, size_t nSize)
 	{
 		sHead = 0xFEFF;
 		nLength = nSize + 4;
@@ -42,8 +42,6 @@ public:
 		{
 			sSum += BYTE(strData[i]) & 0xff;
 		}
-		this->hEvent = hEvent;
-		TRACE("hEvent = %d\r\n", hEvent);
 	}
 
 	CPacket(const CPacket& pack)
@@ -53,10 +51,9 @@ public:
 		sCmd = pack.sCmd;
 		strData = pack.strData;
 		sSum = pack.sSum;
-		hEvent = pack.hEvent;
 	}
 	CPacket(const BYTE* pData, size_t& nSize)
-		: hEvent(INVALID_HANDLE_VALUE){
+	{
 		size_t i = 0;
 		for (; i < nSize; i++)
 		{
@@ -106,7 +103,6 @@ public:
 			sCmd = pack.sCmd;
 			strData = pack.strData;
 			sSum = pack.sSum;
-			hEvent = pack.hEvent;
 		}
 		return *this;
 	}
@@ -137,7 +133,6 @@ public:
 	std::string strData;	//包数据
 	WORD sSum;				//和校验
 	//std::string strOut;		//数据包的全部数据
-	HANDLE hEvent;			
 };
 #pragma pack(pop)
 
@@ -168,6 +163,42 @@ typedef struct file_info {
 	BOOL IsDirectory;    //是否为目录0 否 1是
 	char szFileName[256];//文件名
 }FILEINFO, * PFILEINFO;
+
+
+enum {
+	CSM_AUTOCLOSE = 1,	// CSM = Client Socket Mode 自动关闭
+	S
+};
+
+
+typedef struct PacketData {
+	std::string strData;
+	UINT nMode;
+	PacketData(const char* pData, size_t nLen, UINT mode)
+	{
+		strData.resize(nLen);
+		memcpy((char*)strData.c_str(), pData, nLen);
+		nMode = mode;
+	}
+
+	PacketData(const PacketData& data)
+	{
+		strData = data.strData;
+		nMode = data.nMode;
+	}
+
+	PacketData& operator=(const PacketData& data)
+	{
+		if (this != &data)
+		{
+			strData = data.strData;
+			nMode = data.nMode;
+		}
+		return *this;
+	}
+
+}PACKET_DATA;
+
 
 std::string GetErrInfo(int wsaErrCode);
 
@@ -255,8 +286,10 @@ public:
 		return m_packet;
 	}
 
+	bool SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed = true);
 
 
+/*
 	bool SendPacket(const CPacket& pack, 
 		std::list<CPacket>& lstPacks,
 		bool isAutoClosed = true)
@@ -271,11 +304,11 @@ public:
 			//}
 			m_hThread = (HANDLE)_beginthread(&CClientSocket::threadEntry, 0, this);
 		}
+
+
 		m_lock.lock();
 		m_lstSend.push_back(pack);
 		
-		//auto pr = m_mapAck.insert(std::pair<HANDLE, std::list<CPacket>>
-		//(pack.hEvent, std::list<CPacket>()));
 		auto pr = m_mapAck.insert(std::pair<HANDLE, std::list<CPacket>&>
 			(pack.hEvent, lstPacks));
 		m_mapAutoClosed.insert(std::pair<HANDLE, bool>(pack.hEvent, isAutoClosed));
@@ -307,6 +340,8 @@ public:
 		//m_mapAck.erase(pack.hEvent);
 		return false;
 	}
+
+*/
 
 	bool GetFilePath(std::string& strPath)
 	{
@@ -363,6 +398,8 @@ private:
 
 
 private:
+	UINT m_nThreadID;
+
 	typedef void(CClientSocket::* MSGFUNC)(UINT nMsg, WPARAM wParam, LPARAM lParam);
 	std::map<UINT, MSGFUNC> m_mapFunc;
 
@@ -389,36 +426,8 @@ private:
 
 	}
 
-	CClientSocket(const CClientSocket& ss)	//复制构造函数
-	{
-		m_hThread = INVALID_HANDLE_VALUE;
-		m_bAutoClose = ss.m_bAutoClose;
-		m_socket = ss.m_socket;
-		m_nIP = ss.m_nIP;
-		m_nPort = ss.m_nPort;
+	CClientSocket(const CClientSocket& ss);	//复制构造函数
 
-		struct
-		{
-			UINT message;
-			MSGFUNC func;
-		} 
-		funcs[] = 
-		{
-			{WM_SEND_PACK, &CClientSocket::SendPack},
-			
-			
-			
-			{0, NULL}		
-		};
-		for (int i = 0; funcs[i].message != 0; i++)
-		{
-			if (m_mapFunc.insert(std::pair<UINT, MSGFUNC>(funcs[i].message, funcs[i].func)).second == false)
-			{
-				TRACE("m_mapFunc insert  error! -> func[%d].message = %d, func[%d].func = %08X\r\n",
-					i, funcs[i].message, i, funcs[i].func);
-			}
-		}
-	}
 	CClientSocket()
 		: m_nIP(INADDR_ANY), 
 		  m_nPort(0),
@@ -434,7 +443,27 @@ private:
 		}
 		m_buffer.resize(BUFFER_SIZE);
 		memset(m_buffer.data(), 0, BUFFER_SIZE);
+
+		struct
+		{
+			UINT message;
+			MSGFUNC func;
+		}
+		funcs[] =
+		{
+			{WM_SEND_PACK, &CClientSocket::SendPack},
+			{0, NULL}
+		};
+		for (int i = 0; funcs[i].message != 0; i++)
+		{
+			if (m_mapFunc.insert(std::pair<UINT, MSGFUNC>(funcs[i].message, funcs[i].func)).second == false)
+			{
+				TRACE("m_mapFunc insert  error! -> func[%d].message = %d, func[%d].func = %08X\r\n",
+					i, funcs[i].message, i, funcs[i].func);
+			}
+		}
 	}
+
 	virtual ~CClientSocket()
 	{
 		closesocket(m_socket);
@@ -442,7 +471,8 @@ private:
 		WSACleanup();
 	}
 
-	static void threadEntry(void* arg);
+	static unsigned __stdcall threadEntry(void* arg);
+
 	void threadFunc();
 
 	void threadFunc2();

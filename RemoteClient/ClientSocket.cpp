@@ -1,6 +1,22 @@
 #include "pch.h"
 #include "ClientSocket.h"
 
+CClientSocket::CClientSocket(const CClientSocket& ss)
+{
+	m_hThread = INVALID_HANDLE_VALUE;
+	m_bAutoClose = ss.m_bAutoClose;
+	m_socket = ss.m_socket;
+	m_nIP = ss.m_nIP;
+	m_nPort = ss.m_nPort;
+
+	std::map<UINT, MSGFUNC>::const_iterator it = ss.m_mapFunc.begin();
+	for (; it != ss.m_mapFunc.end(); it++)
+	{
+		m_mapFunc.insert(std::pair<UINT, MSGFUNC>(it->first, it->second));
+	}
+}
+
+
 
 std::string GetErrInfo(int wsaErrCode)
 {
@@ -22,11 +38,12 @@ std::string GetErrInfo(int wsaErrCode)
 }
 
 
-void CClientSocket::threadEntry(void* arg)
+unsigned CClientSocket::threadEntry(void* arg)
 {
 	CClientSocket* thiz = (CClientSocket*)arg;
-	thiz->threadFunc();
-	_endthread();
+	thiz->threadFunc2();
+	_endthreadex(0);
+	return 0;
 }
 
 void CClientSocket::threadFunc()
@@ -74,7 +91,6 @@ void CClientSocket::threadFunc()
 
 						if (size > 0)
 						{
-
 							pack.hEvent = head.hEvent;
 							TRACE("&lstPackets = %p\r\n", it->second);
 							it->second.push_back(pack);
@@ -100,7 +116,6 @@ void CClientSocket::threadFunc()
 						{
 							TRACE("m_mapAutoClosed erase end!\r\n");
 						}
-						
 						break;
 					}
 				} while (it0->second == false);
@@ -130,35 +145,75 @@ void CClientSocket::threadFunc2()
 		if (m_mapFunc.find(msg.message) != m_mapFunc.end())
 		{
 			(this->*m_mapFunc[msg.message]) (msg.message, msg.wParam, msg.lParam);
-			
 		}
 	}
+}
 
+bool CClientSocket::SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed)
+{
+	if (m_hThread == INVALID_HANDLE_VALUE) {
+		m_hThread = (HANDLE)_beginthreadex(NULL, 0, &CClientSocket::threadEntry, this, 0, &m_nThreadID);
+	}
+
+	UINT nMode = isAutoClosed ? CSM_AUTOCLOSE : 0;
+	std::string strOut;
+	pack.Data(strOut);
+
+	PostThreadMessage(m_nThreadID, WM_SEND_PACK, (WPARAM)new PACKET_DATA(strOut.c_str(), strOut.size(), nMode), (LPARAM)hWnd);
 }
 
 void CClientSocket::SendPack(UINT nMsg, WPARAM wParam, LPARAM lParam)
 {
-	//TODO: 定义一个消息的数据结构（）
-	TRACE("m_sock = %d\r\n", m_socket);
-	if (m_socket == -1) return;
-	int ret = send(m_socket, (char*)wParam, (int)lParam, 0);
-	//TODO:
-
+	PACKET_DATA data = *(PACKET_DATA*)wParam;
+	delete (PACKET_DATA*)wParam;
+	HWND hWnd = (HWND)lParam;
 	if (initSocket() == true)
 	{
-		int ret = send(m_socket, (char*)wParam, (int)lParam, 0);
+		int ret = send(m_socket, (char*)data.strData.c_str(), (int)data.strData.size(), 0);
 		if (ret > 0)
 		{
-
+			size_t index = 0;
+			std::string strBuffer;
+			strBuffer.resize(BUFFER_SIZE);
+			char* pBuffer = (char*)strBuffer.c_str();
+			while(m_socket != INVALID_SOCKET)	
+			{
+				int length = recv(m_socket, pBuffer + index, BUFFER_SIZE - index, 0);
+				if ( (length > 0) || (index > 0) )
+				{
+					index += (size_t)length;
+					size_t nLen = index;
+					CPacket pack((BYTE*)pBuffer, index);
+					if (nLen > 0)
+					{
+						::SendMessage(hWnd, WM_SEND_PACK_ACK, (WPARAM)new CPacket(pack), NULL);
+						if (data.nMode & CSM_AUTOCLOSE)
+						{
+							closeClient();
+							return;
+						}
+					}
+					index -= nLen;
+					memmove(pBuffer, pBuffer + index, nLen);
+				}
+				else
+				{
+					closeClient();
+					::SendMessage(hWnd, WM_SEND_PACK_ACK, NULL, 1);
+				}
+			}
 		}
 		else
 		{
 			TRACE("send msg size <= 0!\r\n");
 			closeClient();
+			::SendMessage(hWnd, WM_SEND_PACK_ACK, NULL, -1);
 		}
 	}
 	else
 	{
 		TRACE("init socket failed!\r\n");
+		::SendMessage(hWnd, WM_SEND_PACK_ACK, NULL, -2);
 	}
 }
+
