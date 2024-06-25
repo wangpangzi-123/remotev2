@@ -52,7 +52,17 @@ END_MESSAGE_MAP()
 
 LRESULT CWatchDialog::OnSendPackAck(WPARAM wParam, LPARAM lParam)
 {
-	if (lParam == 0)
+	if((lParam == -1) || (lParam == -2))
+	{
+			//错误处理
+
+	}
+	else if (lParam == 1)
+	{
+			//对方关闭套接字
+
+	}
+	else
 	{
 		CPacket* pPacket = (CPacket*)wParam;
 		if (pPacket != NULL)
@@ -86,16 +96,6 @@ LRESULT CWatchDialog::OnSendPackAck(WPARAM wParam, LPARAM lParam)
 			break;
 			}
 		}
-	}
-	else if (lParam < 0)
-	{
-		//错误处理
-
-	}
-	else if (lParam > 0)
-	{
-		//对方关闭套接字
-
 	}
 	return 0;
 }
@@ -183,9 +183,6 @@ void CWatchDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
 		CClientController* pController = CClientController::getInstance();
 		pController->SendCommandPacket(GetSafeHwnd(), 5, true, (BYTE*)&event, sizeof(event));
 		//CClientController::getInstance().SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
-
-
-
 	}
 	
 	CDialog::OnLButtonDblClk(nFlags, point);
@@ -276,9 +273,7 @@ void CWatchDialog::OnRButtonDblClk(UINT nFlags, CPoint point)
 
 		CClientController* pController = CClientController::getInstance();
 		pController->SendCommandPacket(GetSafeHwnd(), 5, true, (BYTE*)&event, sizeof(event));
-
 		//CClientController::getInstance().SendCommandPacket(5, true, (BYTE*)&event, sizeof(event));
-
 	}
 
 	CDialog::OnRButtonDblClk(nFlags, point);

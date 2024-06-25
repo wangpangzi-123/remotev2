@@ -167,24 +167,27 @@ typedef struct file_info {
 
 enum {
 	CSM_AUTOCLOSE = 1,	// CSM = Client Socket Mode ×Ô¶¯¹Ø±Õ
-	S
 };
 
 
 typedef struct PacketData {
 	std::string strData;
 	UINT nMode;
-	PacketData(const char* pData, size_t nLen, UINT mode)
+	WPARAM wParam;
+
+	PacketData(const char* pData, size_t nLen, UINT mode, WPARAM nParam = 0)
 	{
 		strData.resize(nLen);
 		memcpy((char*)strData.c_str(), pData, nLen);
 		nMode = mode;
+		wParam = nParam;
 	}
 
 	PacketData(const PacketData& data)
 	{
 		strData = data.strData;
 		nMode = data.nMode;
+		wParam = data.wParam;
 	}
 
 	PacketData& operator=(const PacketData& data)
@@ -193,6 +196,7 @@ typedef struct PacketData {
 		{
 			strData = data.strData;
 			nMode = data.nMode;
+			wParam = data.wParam;
 		}
 		return *this;
 	}
@@ -286,7 +290,7 @@ public:
 		return m_packet;
 	}
 
-	bool SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed = true);
+	bool SendPacket(HWND hWnd, const CPacket& pack, bool isAutoClosed = true, WPARAM wParam = 0);
 
 
 /*

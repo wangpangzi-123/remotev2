@@ -311,10 +311,9 @@ void CRemoteClientDlg::LoadFileInfo()
 	CString strPath = GetPath(hTreeSelected);
 	//int nCmd = SendCommandPacket(2, false, (BYTE*)(LPCTSTR)strPath, strPath.GetLength()); //send command packet
 	CClientController* pController = CClientController::getInstance();
-	
-	
 	std::list<CPacket> lstPackets;
-	int nCmd = pController->SendCommandPacket(GetSafeHwnd(),2, false, (BYTE*)(LPCTSTR)strPath, strPath.GetLength());
+	int nCmd = pController->SendCommandPacket(GetSafeHwnd(), 2, false, (BYTE*)(LPCTSTR)strPath, strPath.GetLength(), (WPARAM)hTreeSelected);
+
 	if (lstPackets.size() > 0)
 	{
 		std::list<CPacket>::iterator it = lstPackets.begin();
@@ -339,7 +338,6 @@ void CRemoteClientDlg::LoadFileInfo()
 					m_List.InsertItem(0, pInfo->szFileName);
 				}
 			}
-
 		}
 	}
 }
@@ -469,16 +467,26 @@ void CRemoteClientDlg::OnRunFile()
 
 LRESULT CRemoteClientDlg::OnSendPackAck(WPARAM wParam, LPARAM lParam)
 {
-	if (lParam == 0)
+	if ((lParam == -1) || (lParam == -2))
+	{
+		//错误处理
+
+	}
+	else if (lParam == 1)
+	{
+		//对方关闭套接字
+
+	}
+	else
 	{
 		CPacket* pPacket = (CPacket*)wParam;
 		if (pPacket != NULL)
 		{
+			CPacket& head = *pPacket;
 			switch (pPacket->sCmd)
 			{
 			case 1:
 			{
-				CPacket& head = *pPacket;
 				std::string drivers = head.strData;
 				std::string dr;
 				m_Tree.DeleteAllItems();
@@ -502,25 +510,71 @@ LRESULT CRemoteClientDlg::OnSendPackAck(WPARAM wParam, LPARAM lParam)
 			}
 			break;
 
-			case 5:
-			case 7:
-			case 8:
+			case 2:
+			{
+				PFILEINFO pInfo = (PFILEINFO)(head).strData.c_str();
+				if (pInfo->HasNext)
+				{
+					if (pInfo->IsDirectory)
+					{
+						if (CString(pInfo->szFileName) == "." || (CString(pInfo->szFileName) == ".."))
+						{
+							break;
+						}
+						TRACE("directory name: %s\r\n", pInfo->szFileName);
+						HTREEITEM hTemp = m_Tree.InsertItem(pInfo->szFileName, (HTREEITEM)lParam, TVI_LAST);
+						m_Tree.InsertItem("", hTemp, TVI_LAST);
+					}
+					else
+					{
+						m_List.InsertItem(0, pInfo->szFileName);
+					}
+				}
+			}
+			break;
+			case 3:
+				TRACE("run file done!\r\n");
+				break;
+			case 4:
+			{
+				static LONGLONG length = 0, index = 0;
+				if (length == 0)
+				{
+					length = *(long long*)head.strData.c_str();
+					if (length == 0)
+					{
+						AfxMessageBox("文件长度为0 或者 无法读取文件！！！");
+						CClientController::getInstance()->DownloadEnd();
+						break;
+					}
+				}
+				else if (length > 0 && index >= length)
+				{
+					fclose((FILE*)lParam);
+					length = 0;
+					index = 0;
+					CClientController::getInstance()->DownloadEnd();
+				}
+				else
+				{
+					FILE* pFile = (FILE*)lParam;
+					size_t actuallyWriteBytes = fwrite(head.strData.c_str(),1 ,head.strData.size(), pFile);
+					index += actuallyWriteBytes;
+				}
+			}
+			break;
+			case 9:
+				TRACE("delete file done!\r\n");
+				break;
+			case 1981:
+				TRACE("test connected success!\r\n");
+				break;
 			default:
+				TRACE("unknow data received! %d\r\n", head.sCmd);
 				break;
 			}
 		}
 	}
-	else if (lParam < 0)
-	{
-		//错误处理
-
-	}
-	else if (lParam > 0)
-	{
-		//对方关闭套接字
-
-	}
-	return 0;
 	return 0;
 }
 
