@@ -84,7 +84,13 @@ public:
 		TRACE("%s nCmd = %d, tick = %llu\r\n",
 			__FUNCTION__, nCmd, GetTickCount64());
 
-		return CClientSocket::getInstance().SendPacket(hWnd, CPacket(nCmd, pData, nLength), bAutoClose, wParam);//客户端发送命令包
+		bool ret = CClientSocket::getInstance().SendPacket(hWnd, CPacket(nCmd, pData, nLength), bAutoClose, wParam);//客户端发送命令包
+		//if (!ret)
+		//{
+		//	Sleep(30);
+		//	ret = CClientSocket::getInstance().SendPacket(hWnd, CPacket(nCmd, pData, nLength), bAutoClose, wParam);
+		//}
+		return ret;
 	}
 
 	//int getImage(CImage& image)

@@ -3,11 +3,13 @@
 
 CClientSocket::CClientSocket(const CClientSocket& ss)
 {
+	m_nThreadID = ss.m_nThreadID;
 	m_hThread = INVALID_HANDLE_VALUE;
 	m_bAutoClose = ss.m_bAutoClose;
 	m_socket = ss.m_socket;
 	m_nIP = ss.m_nIP;
 	m_nPort = ss.m_nPort;
+	
 
 	std::map<UINT, MSGFUNC>::const_iterator it = ss.m_mapFunc.begin();
 	for (; it != ss.m_mapFunc.end(); it++)
@@ -139,13 +141,16 @@ void CClientSocket::threadFunc()
 
 void CClientSocket::threadFunc2()
 {
+	SetEvent(m_eventInvoke);
 	MSG msg;
 	while (::GetMessage(&msg, NULL, 0, 0))
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
+		TRACE("Get Message : %08X \r\n", msg.message);
 		if (m_mapFunc.find(msg.message) != m_mapFunc.end())
 		{
+			TRACE("!= END\r\n");
 			(this->*m_mapFunc[msg.message]) (msg.message, msg.wParam, msg.lParam);
 		}
 	}
@@ -156,15 +161,13 @@ bool CClientSocket::SendPacket(HWND hWnd,
 							   bool isAutoClosed,
 							   WPARAM wParam)
 {
-	if (m_hThread == INVALID_HANDLE_VALUE) {
-		m_hThread = (HANDLE)_beginthreadex(NULL, 0, &CClientSocket::threadEntry, this, 0, &m_nThreadID);
-	}
-
 	UINT nMode = isAutoClosed ? CSM_AUTOCLOSE : 0;
 	std::string strOut;
 	pack.Data(strOut);
 
-	return PostThreadMessage(m_nThreadID, WM_SEND_PACK, (WPARAM)new PACKET_DATA(strOut.c_str(), strOut.size(), nMode, wParam), (LPARAM)hWnd);
+	
+	bool ret = PostThreadMessage(m_nThreadID, WM_SEND_PACK, (WPARAM)new PACKET_DATA(strOut.c_str(), strOut.size(), nMode, wParam), (LPARAM)hWnd);
+	return ret;
 }
 
 void CClientSocket::SendPack(UINT nMsg, WPARAM wParam, LPARAM lParam)
@@ -172,11 +175,13 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam, LPARAM lParam)
 	PACKET_DATA data = *(PACKET_DATA*)wParam;
 	delete (PACKET_DATA*)wParam;
 	HWND hWnd = (HWND)lParam;
+	TRACE("send pack ack!\r\n");
 	if (initSocket() == true)
 	{
 		int ret = send(m_socket, (char*)data.strData.c_str(), (int)data.strData.size(), 0);
 		if (ret > 0)
 		{
+			TRACE("send sc!\r\n");
 			size_t index = 0;
 			std::string strBuffer;
 			strBuffer.resize(BUFFER_SIZE);

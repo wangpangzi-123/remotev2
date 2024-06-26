@@ -402,16 +402,14 @@ private:
 
 
 private:
+	HANDLE m_eventInvoke;
+
 	UINT m_nThreadID;
 
 	typedef void(CClientSocket::* MSGFUNC)(UINT nMsg, WPARAM wParam, LPARAM lParam);
 	std::map<UINT, MSGFUNC> m_mapFunc;
 
 	void SendPack(UINT nMsg, WPARAM wParam, LPARAM lParam);
-	
-
-
-	
 	HANDLE m_hThread;
 	bool m_bAutoClose;
 	std::mutex m_lock;
@@ -445,6 +443,14 @@ private:
 			MessageBox(NULL, _T("无法初始化 套接字环境， 请检查网络设置"), _T("初始化错误！"), MB_OK | MB_ICONERROR);
 			exit(0);	//硬件故障
 		}
+		m_eventInvoke = CreateEvent(NULL, TRUE, FALSE, NULL);
+		m_hThread = (HANDLE)_beginthreadex(NULL, 0, &CClientSocket::threadEntry, this, 0, &m_nThreadID);
+		if (WaitForSingleObject(m_eventInvoke, 100) == WAIT_TIMEOUT)
+		{
+			TRACE("网络线程启动失败！\r\n");
+		}
+		CloseHandle(m_eventInvoke);
+		
 		m_buffer.resize(BUFFER_SIZE);
 		memset(m_buffer.data(), 0, BUFFER_SIZE);
 

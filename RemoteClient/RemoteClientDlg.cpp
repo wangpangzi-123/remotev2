@@ -156,7 +156,7 @@ BOOL CRemoteClientDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 	UpdateData();
-	m_server_address = 0xC0A8D582; //C0A8D502 0x7F000001 0xC0A8D582
+	m_server_address = 0xC0A88C82; //C0A8D502 0x7F000001 0xC0A8D582
 	m_nPort = _T("9527");
 
 	CClientController* pController = CClientController::getInstance();
@@ -479,11 +479,11 @@ LRESULT CRemoteClientDlg::OnSendPackAck(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{
-		CPacket* pPacket = (CPacket*)wParam;
-		if (pPacket != NULL)
+		if (wParam != NULL)
 		{
-			CPacket& head = *pPacket;
-			switch (pPacket->sCmd)
+			CPacket head = *(CPacket*)wParam;
+			delete (CPacket*)wParam;
+			switch (head.sCmd)
 			{
 			case 1:
 			{
