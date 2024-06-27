@@ -64,28 +64,28 @@ LRESULT CWatchDialog::OnSendPackAck(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{
-		CPacket* pPacket = (CPacket*)wParam;
-		if (pPacket != NULL)
+
+
+		TRACE("get watch data!\r\n");
+		if (wParam != NULL)
 		{
-			switch (pPacket->sCmd)
+			CPacket head = *(CPacket*)wParam;
+			delete (CPacket*)wParam;
+			switch (head.sCmd)
 			{
 			case 6:	
 			{
-				if (m_isFull == true)
-				{
-					Tool::Bytes2Image(m_image, pPacket->strData);
-					CRect rect;
-					m_picture.GetWindowRect(rect);
-					m_nObjHeight = m_image.GetHeight();
-					m_nObjWidth = m_image.GetWidth();
-					m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0,
-						rect.Width(), rect.Height());
-					TRACE("更新图片完成 %d %d %08X\r\n", m_nObjWidth, m_nObjHeight,
+				Tool::Bytes2Image(m_image, head.strData);
+				CRect rect;
+				m_picture.GetWindowRect(rect);
+				m_nObjHeight = m_image.GetHeight();
+				m_nObjWidth = m_image.GetWidth();
+				m_image.StretchBlt(m_picture.GetDC()->GetSafeHdc(), 0, 0,
+				rect.Width(), rect.Height());
+				TRACE("更新图片完成 %d %d %08X\r\n", m_nObjWidth, m_nObjHeight,
 						(HBITMAP)m_image);
-					m_picture.InvalidateRect(NULL);
-					m_image.Destroy();
-					m_isFull = false;
-				}
+				m_picture.InvalidateRect(NULL);
+				m_image.Destroy();
 				break;
 			}
 

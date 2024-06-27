@@ -209,32 +209,34 @@ void __stdcall CClientController::threadDownloadEntry(void* arg)
 
 void CClientController::threadWatchData()
 {
-	ULONGLONG tick = GetTickCount64();
+	ULONGLONG nTick = GetTickCount64();
 	while (!m_watchIsClose)
 	{
 		if (m_watchDlg.isFull() == false)
 		{
-			std::list<CPacket> lstPackets;
-			TRACE("&lstPackets = %p\r\n", &lstPackets);
+			if (GetTickCount64() - nTick < 100)
+			{
+				Sleep(100 - DWORD(GetTickCount64() - nTick));
+			}
+			nTick = GetTickCount64();
+			//std::list<CPacket> lstPackets;
+			//TRACE("&lstPackets = %p\r\n", &lstPackets);
 			int ret = SendCommandPacket(m_watchDlg.GetSafeHwnd(), 6, true, NULL, 0);
 			//TODO:添加消息响应函数
 			//TODO;控制发送频率
-			if (ret == 6)
+			if (ret == 1)
 			{
-				if (Tool::Bytes2Image(m_watchDlg.GetImage(), lstPackets.front().strData) == 0)
-				{
-					m_watchDlg.SetImageStatus(true);
-				}
-				else
-				{
-					TRACE("获取图片失败！ \r\n");
-				}
-			}
-			else
-			{
-				Sleep(1);
+				//if (Tool::Bytes2Image(m_watchDlg.GetImage(), lstPackets.front().strData) == 0)
+				//{
+				//m_watchDlg.SetImageStatus(true);
+				//}
+				//else
+				//{
+				//	TRACE("获取图片失败！ \r\n");
+				//}
 			}
 		}
+		Sleep(1);
 	}
 }
 
