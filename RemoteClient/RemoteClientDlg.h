@@ -29,12 +29,12 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 
 public:
+	void LoadFileInfo();
 private:
 	bool   m_watchIsClose;
 	//std::thread::id watchThreadId;
 private:
 	void LoadFileCurrent();
-	void LoadFileInfo();
 	CString GetPath(HTREEITEM hTree);
 	void DeleteTreeChildrenItem(HTREEITEM hTree);
 	//1 、查看磁盘分区

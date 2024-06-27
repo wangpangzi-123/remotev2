@@ -160,7 +160,7 @@ BOOL CRemoteClientDlg::OnInitDialog()
 	//0xC0A88C82 me
 	//0xC0A8D582
 
-	m_server_address = 0xC0A8D582; //C0A8D502 0x7F000001 0xC0A8D582
+	m_server_address = 0xC0A88C82; //C0A8D502 0x7F000001 0xC0A8D582
 	m_nPort = _T("9527");
 
 	CClientController* pController = CClientController::getInstance();
@@ -242,7 +242,7 @@ void CRemoteClientDlg::OnBnClickedBtnFileinfo()
 	CClientController* pController = CClientController::getInstance();
 	//int ret = CClientController::getInstance().SendCommandPacket(1);
 	int ret = pController->SendCommandPacket(GetSafeHwnd(), 1, true, NULL, 0);
-	if (ret == -1 || (lstPackets.size() <= 0))
+	if (ret == -1)
 	{
 		AfxMessageBox(_T("命令处理失败！！！"));
 		return;
@@ -528,6 +528,7 @@ LRESULT CRemoteClientDlg::OnSendPackAck(WPARAM wParam, LPARAM lParam)
 						TRACE("directory name: %s\r\n", pInfo->szFileName);
 						HTREEITEM hTemp = m_Tree.InsertItem(pInfo->szFileName, (HTREEITEM)lParam, TVI_LAST);
 						m_Tree.InsertItem("", hTemp, TVI_LAST);
+						m_Tree.Expand((HTREEITEM)lParam, TVE_EXPAND);
 					}
 					else
 					{
@@ -564,6 +565,13 @@ LRESULT CRemoteClientDlg::OnSendPackAck(WPARAM wParam, LPARAM lParam)
 					FILE* pFile = (FILE*)lParam;
 					size_t actuallyWriteBytes = fwrite(head.strData.c_str(),1 ,head.strData.size(), pFile);
 					index += actuallyWriteBytes;
+					if (index >= length)
+					{
+						fclose((FILE*)lParam);
+						length = 0;
+						index = 0;
+						CClientController::getInstance()->DownloadEnd();
+					}
 				}
 			}
 			break;

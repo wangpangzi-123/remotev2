@@ -179,6 +179,10 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam, LPARAM lParam)
 	PACKET_DATA data = *(PACKET_DATA*)wParam;
 	delete (PACKET_DATA*)wParam;
 	HWND hWnd = (HWND)lParam;
+
+	size_t nTemp = data.strData.size();
+	CPacket current((BYTE*)data.strData.c_str(), nTemp);
+
 	TRACE("send pack ack!\r\n");
 	if (initSocket() == true)
 	{
@@ -197,8 +201,8 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam, LPARAM lParam)
 				{
 					index += (size_t)length;
 					size_t nLen = index;
-					CPacket pack((BYTE*)pBuffer, index);
-					if (nLen > 0)
+					CPacket pack((BYTE*)pBuffer, nLen);
+					if (nLen > 0)	//index > 0 代表解析到包了
 					{
 						::SendMessage(hWnd, WM_SEND_PACK_ACK, (WPARAM)new CPacket(pack), data.wParam);
 						if (data.nMode & CSM_AUTOCLOSE)
@@ -206,14 +210,18 @@ void CClientSocket::SendPack(UINT nMsg, WPARAM wParam, LPARAM lParam)
 							closeClient();
 							return;
 						}
+						index -= nLen;
+						memmove(pBuffer, pBuffer + nLen, index);
 					}
-					index -= nLen;
-					memmove(pBuffer, pBuffer + index, nLen);
+					//index -= nLen;
+					//memmove(pBuffer, pBuffer + index, BUFFER_SIZE - index);
 				}
 				else
 				{
 					closeClient();
-					::SendMessage(hWnd, WM_SEND_PACK_ACK, NULL, 1);
+					/*::SendMessage(hWnd, WM_SEND_PACK_ACK, NULL, 1);*/
+					::SendMessage(hWnd, WM_SEND_PACK_ACK, 
+						(WPARAM)new CPacket(current.sCmd, NULL, 0), 1);
 				}
 			}
 		}
