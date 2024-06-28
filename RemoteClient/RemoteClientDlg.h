@@ -34,6 +34,12 @@ private:
 	bool   m_watchIsClose;
 	//std::thread::id watchThreadId;
 private:
+	void DealCommand(const std::string& strData, LPARAM lParam);
+	void InitUIData();
+	void Str2Tree(std::string& driver, CTreeCtrl& tree);
+	void UpdateFileInfo(const FILEINFO& finfo, HTREEITEM hParent);
+	void UpdateDownloadFile(const std::string& strData, FILE* pFile);
+
 	void LoadFileCurrent();
 	CString GetPath(HTREEITEM hTree);
 	void DeleteTreeChildrenItem(HTREEITEM hTree);

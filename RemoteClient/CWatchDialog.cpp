@@ -64,9 +64,6 @@ LRESULT CWatchDialog::OnSendPackAck(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{
-
-
-		TRACE("get watch data!\r\n");
 		if (wParam != NULL)
 		{
 			CPacket head = *(CPacket*)wParam;
