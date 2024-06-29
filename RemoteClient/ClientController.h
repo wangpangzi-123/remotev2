@@ -38,7 +38,7 @@ public:
 	int Invoke(CWnd*& pMainWnd);	//消息泵启动
 
 	//发送消息
-	LRESULT SendMessage(MSG msg);
+	//LRESULT SendMessage(MSG msg);
 
 	//Control -> 控制Socket 更新ip地址和端口号
 	void UpdateAddress(int nIP, int nPort)
@@ -168,8 +168,7 @@ protected:
 
 //下载文件
 protected:
-	void threadDownloadFile();
-	static void __stdcall threadDownloadEntry(void* arg);
+
 
 //视频监控
 protected:
@@ -221,7 +220,7 @@ private:
 	CStatusDlg m_statusDlg;
 
 	HANDLE m_hThread;
-	HANDLE m_hThreadDownload;
+	//HANDLE m_hThreadDownload;
 
 
 

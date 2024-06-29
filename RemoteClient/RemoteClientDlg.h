@@ -4,6 +4,7 @@
 
 #pragma once
 #include "StatusDlg.h"
+#include "ClientSocket.h"
 //#include <thread>
 
 #ifndef WM_SEND_PACK_ACK
@@ -34,7 +35,7 @@ private:
 	bool   m_watchIsClose;
 	//std::thread::id watchThreadId;
 private:
-	void DealCommand(const std::string& strData, LPARAM lParam);
+	void DealCommand(WORD nCmd, std::string& strData, LPARAM lParam);
 	void InitUIData();
 	void Str2Tree(std::string& driver, CTreeCtrl& tree);
 	void UpdateFileInfo(const FILEINFO& finfo, HTREEITEM hParent);
@@ -47,7 +48,7 @@ private:
 	//2 、查看指定目录的文件
 	//3 、打开文件
 	//4 、下载文件
-	int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE *pData = NULL, size_t nLength = 0);
+	//int SendCommandPacket(int nCmd, bool bAutoClose = true, BYTE *pData = NULL, size_t nLength = 0);
 
 // 实现
 protected:

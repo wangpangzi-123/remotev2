@@ -390,6 +390,7 @@ protected:
             }
         }
         ::ShowWindow(::FindWindow(_T("Shell_TrayWnd"), NULL), SW_SHOW);
+        ClipCursor(NULL);
         ShowCursor(true);
 
         dlg.DestroyWindow();

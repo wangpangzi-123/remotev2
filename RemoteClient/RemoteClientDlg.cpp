@@ -229,19 +229,20 @@ void CRemoteClientDlg::OnBnClickedBtnFileinfo()
 
 
 
-void CRemoteClientDlg::DealCommand(const std::string& strData, LPARAM lParam)
+void CRemoteClientDlg::DealCommand(WORD nCmd, std::string& strData, LPARAM lParam)
 {
-	switch (head.sCmd)
+	
+	switch (nCmd)
 	{
 	case 1:
 	{
-		Str2Tree(head.strData, m_Tree);
+		Str2Tree(strData, m_Tree);
 	}
 	break;
 
 	case 2:
 	{
-		UpdateFileInfo(*(PFILEINFO)(head).strData.c_str(), (HTREEITEM)lParam);
+		UpdateFileInfo(*(PFILEINFO)strData.c_str(), (HTREEITEM)lParam);
 	}
 	break;
 	case 3:
@@ -249,7 +250,7 @@ void CRemoteClientDlg::DealCommand(const std::string& strData, LPARAM lParam)
 		break;
 	case 4:
 	{
-		UpdateDownloadFile(head.strData, (FILE*)lParam);
+		UpdateDownloadFile(strData, (FILE*)lParam);
 	}
 	break;
 	case 9:
@@ -259,10 +260,9 @@ void CRemoteClientDlg::DealCommand(const std::string& strData, LPARAM lParam)
 		TRACE("test connected success!\r\n");
 		break;
 	default:
-		TRACE("unknow data received! %d\r\n", head.sCmd);
+		TRACE("unknow data received! %d\r\n", nCmd);
 		break;
 	}
-
 }
 
 void CRemoteClientDlg::InitUIData()
@@ -272,7 +272,7 @@ void CRemoteClientDlg::InitUIData()
 	UpdateData();
 	//0xC0A88C82 me
 	//0xC0A8D582
-	m_server_address = 0xC0A88C82; //C0A8D502 0x7F000001 0xC0A8D582
+	m_server_address = 0xC0A8D582; //C0A8D502 0x7F000001 0xC0A8D582
 	m_nPort = _T("9527");
 
 	CClientController* pController = CClientController::getInstance();
@@ -422,8 +422,8 @@ void CRemoteClientDlg::LoadFileInfo()
 	HTREEITEM hTreeSelected = m_Tree.HitTest(ptMouse, 0);
 	if (hTreeSelected == NULL)
 		return;
-	if (m_Tree.GetChildItem(hTreeSelected) == NULL)
-		return;
+	//if (m_Tree.GetChildItem(hTreeSelected) == NULL)
+	//	return;
 	DeleteTreeChildrenItem(hTreeSelected);
 	m_List.DeleteAllItems();
 	CString strPath = GetPath(hTreeSelected);
@@ -600,7 +600,7 @@ LRESULT CRemoteClientDlg::OnSendPackAck(WPARAM wParam, LPARAM lParam)
 			
 			CPacket head = *(CPacket*)wParam;
 			delete (CPacket*)wParam;
-			DealCommand(head.strData, lParam);
+			DealCommand(head.sCmd, head.strData, lParam);
 			
 		}
 	}
