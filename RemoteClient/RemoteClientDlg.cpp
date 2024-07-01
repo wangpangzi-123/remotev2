@@ -272,7 +272,7 @@ void CRemoteClientDlg::InitUIData()
 	UpdateData();
 	//0xC0A88C82 me
 	//0xC0A8D582
-	m_server_address = 0xC0A8D582; //C0A8D502 0x7F000001 0xC0A8D582
+	m_server_address = 0xC0A88C82; //C0A8D502 0x7F000001 0xC0A8D582
 	m_nPort = _T("9527");
 
 	CClientController* pController = CClientController::getInstance();
