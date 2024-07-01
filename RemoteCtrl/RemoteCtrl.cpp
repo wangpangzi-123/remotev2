@@ -63,26 +63,14 @@ void writeRegister(const CString& strPath)
     RegCloseKey(hKey);
 }
 
-void WriteStartupDir(const CString& strPath)
-{
+//copy file -> to currency file directory(静态库)
 
-    CString strCmd = GetCommandLine();
-    strCmd.Replace(_T("\""), _T(""));
-    BOOL ret = CopyFile(strCmd, strPath, FALSE);
-
-    if (ret == FALSE)
-    {
-        MessageBox(NULL, _T("复制文件夹失败"), _T("错误"), MB_ICONERROR | MB_TOPMOST);
-        exit(0);
-    }
-}
 
 /*
 如果 vs 编译出 32位程序
 */
 bool ChooseAutoInvoke(const CString& strPath)
 {
-
     //C:\Users\Lintao\AppData\Roaming\Microsoft\Windows\Start Menu\Programs
     if (PathFileExists(strPath))
     {
@@ -94,27 +82,14 @@ bool ChooseAutoInvoke(const CString& strPath)
     if (ret == IDYES)
     {
         //终端命令：拷贝 exe 的软链接
-        WriteStartupDir(strPath);
+        if (!Tool::WriteStartupDir(strPath))
+        {
+            MessageBox(NULL, _T("复制文件夹失败"), _T("错误"), MB_ICONERROR | MB_TOPMOST);
+            return false;
+        }
     }
     else if (ret == IDCANCEL)
     { 
-        return false;
-    }
-    return true;
-}
-
-
-bool Init()
-{
-    HMODULE hModule = ::GetModuleHandle(nullptr);
-    if (hModule == nullptr)
-    {
-        wprintf(L"错误: GetModuleHandle 失败\n");
-        return false;
-    }
-    if (!AfxWinInit(hModule, nullptr, ::GetCommandLine(), 0))
-    {
-        wprintf(L"错误: MFC 初始化失败\n");
         return false;
     }
     return true;
@@ -124,28 +99,29 @@ int main()
 {
     if (Tool::IsAdmin())
     {
-        if (!Init()) return -1;
+        if (!Tool::Init()) return -1;
         TRACE("RUN AS ADMINISTRATOR!\r\n");
         MessageBox(NULL, _T("管理员"), _T("用户状态"), 0);
-        CCommand cmdHandle;
-        ChooseAutoInvoke(INVOKE_PATH);
-        CServerSocket* pserver = CServerSocket::getInstance();
-        int ret = pserver->Run(&CCommand::RunCommand, &cmdHandle);
-        switch (ret)
+        
+        if (ChooseAutoInvoke(INVOKE_PATH))
         {
-        case -1:
-        {
-            MessageBox(NULL, _T("网络初始化异常"), _T("网络初始化失败"), MB_OK | MB_ICONERROR);
-            exit(0);
-        }
-        break;
+            CCommand cmdHandle;
+            CServerSocket* pserver = CServerSocket::getInstance();
+            int ret = pserver->Run(&CCommand::RunCommand, &cmdHandle);
+            switch (ret)
+            {
+            case -1:
+            {
+                MessageBox(NULL, _T("网络初始化异常"), _T("网络初始化失败"), MB_OK | MB_ICONERROR);
+            }
+            break;
 
-        case -2:
-        {
-            MessageBox(NULL, _T("多次无法正常接入用户， 结束程序！"), _T("接入用户失败"), MB_OK | MB_ICONERROR);
-            exit(0);
-        }
-        break;
+            case -2:
+            {
+                MessageBox(NULL, _T("多次无法正常接入用户， 结束程序！"), _T("接入用户失败"), MB_OK | MB_ICONERROR);
+            }
+            break;
+            }
         }
     }
     else
@@ -155,8 +131,8 @@ int main()
         if (Tool::RunAsAdmin() == false)
         {
             Tool::ShowError();
+            return 1;
         }
-        return 0;
     }
 
     return 0;

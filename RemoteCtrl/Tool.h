@@ -70,5 +70,64 @@ public:
         CloseHandle(pi.hThread);
         return true;
     }
+
+    static BOOL WriteStartupDir(const CString& strPath)
+    {
+        TCHAR sPath[MAX_PATH] = _T("");
+        GetModuleFileName(NULL, sPath, MAX_PATH);
+
+        //CString strCmd = GetCommandLine();
+        //strCmd.Replace(_T("\""), _T(""));
+        return CopyFile(sPath, strPath, FALSE);
+    }
+
+
+    static BOOL WriteRegisterTable(const CString& strPath)
+    {
+        CString strSubKey = _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run");
+
+        TCHAR sPath[MAX_PATH] = _T("");
+        GetModuleFileName(NULL, sPath, MAX_PATH);
+        BOOL ret = CopyFile(sPath, strPath, FALSE);
+        if (ret == FALSE)
+        {
+            MessageBox(NULL, _T("∏¥÷∆Œƒº˛ ß∞‹"), _T("¥ÌŒÛ"), MB_ICONERROR | MB_TOPMOST);
+            return false;
+        }
+        HKEY hKey = NULL;
+        ret = RegOpenKeyEx(HKEY_LOCAL_MACHINE, strSubKey, 0, KEY_WRITE, &hKey);
+        if (ret != ERROR_SUCCESS)
+        {
+            RegCloseKey(hKey);
+            MessageBox(NULL, _T("ø™ª˙∆Ù∂Ø…Ë÷√ ß∞‹"), _T(" ß∞‹"), MB_ICONERROR | MB_TOPMOST);
+            return false;
+        }
+        ret = RegSetValueEx(hKey, _T("RemoteCtrl"), 0, REG_EXPAND_SZ, (BYTE*)(LPCTSTR)strPath, strPath.GetLength() * sizeof(TCHAR));
+        if (ret != ERROR_SUCCESS)
+        {
+            RegCloseKey(hKey);
+            MessageBox(NULL, _T("ø™ª˙∆Ù∂Ø…Ë÷√ ß∞‹"), _T(" ß∞‹"), MB_ICONERROR | MB_TOPMOST);
+            return false;
+        }
+        RegCloseKey(hKey);
+        return true;
+    }
+
+    static bool Init()
+    {
+        HMODULE hModule = ::GetModuleHandle(nullptr);
+        if (hModule == nullptr)
+        {
+            wprintf(L"¥ÌŒÛ: GetModuleHandle  ß∞‹\n");
+            return false;
+        }
+        if (!AfxWinInit(hModule, nullptr, ::GetCommandLine(), 0))
+        {
+            wprintf(L"¥ÌŒÛ: MFC ≥ı ºªØ ß∞‹\n");
+            return false;
+        }
+        return true;
+    }
+
 };
 
