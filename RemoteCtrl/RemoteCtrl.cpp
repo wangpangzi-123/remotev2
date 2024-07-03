@@ -13,6 +13,7 @@
 #include "Command.h"
 #include <conio.h>
 #include "LQueue.h"
+#include <MSWSock.h>
 
 CWinApp theApp;
 using namespace std;
@@ -212,6 +213,7 @@ int main()
 
 
 
+
     /*
     HANDLE hIOCP = INVALID_HANDLE_VALUE;
     hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 1);
@@ -300,4 +302,68 @@ int main()
 
    
     return 0;
+}
+
+class COverlapped {
+public:
+    OVERLAPPED m_overlapped;
+    DWORD m_operator;
+    char m_buffer[4096];
+    COverlapped() {
+        m_operator = 0;
+        memset(&m_operator, 0, sizeof(m_overlapped));
+        memset(m_buffer, 0, sizeof(m_buffer));
+    }
+};
+
+void iocp()
+{
+    SOCKET sock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+    if (sock == INVALID_SOCKET)
+    {
+        Tool::ShowError();
+        return;
+    }
+    HANDLE hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, sock, 4);
+    if (hIOCP == INVALID_HANDLE_VALUE)
+    {
+        Tool::ShowError();
+        return;
+    }
+    SOCKET client = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+    CreateIoCompletionPort((HANDLE)sock, hIOCP, 0, 0);
+
+    sockaddr_in addr;
+    addr.sin_family = PF_INET;
+    addr.sin_addr.s_addr = inet_addr("0.0.0.0");
+    addr.sin_port = htons(9527);
+
+    bind(sock, (sockaddr*)&addr, sizeof(addr));
+    listen(sock, 5);
+
+    while (true)    //代表一个线程
+    {
+        LPOVERLAPPED pOverlapped = NULL;
+        DWORD transferred = 0;
+        ULONG_PTR key = 0;
+
+        if (GetQueuedCompletionStatus(hIOCP, &transferred, &key, &pOverlapped, INFINITE))
+        {
+
+            OVERLAPPED overlapped;
+            memset(&overlapped, 0, sizeof(OVERLAPPED));
+            char buffer[4096] = "";
+            DWORD received = 0;
+            if (AcceptEx(sock, client, buffer, 0, sizeof(sockaddr_in) + 16, sizeof(sockaddr_in) + 16, &received, &overlapped) == FALSE)
+            {
+                Tool::ShowError();
+            }
+        }
+
+
+    }
+
+
+
+
 }

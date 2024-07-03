@@ -146,6 +146,7 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="LockInfoDialog.h" />
     <ClInclude Include="LQueue.h" />
+    <ClInclude Include="LThread.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RemoteCtrl.h" />
@@ -159,6 +160,7 @@
     <ClCompile Include="Command.cpp" />
     <ClCompile Include="LockInfoDialog.cpp" />
     <ClCompile Include="LQueue.cpp" />
+    <ClCompile Include="LThread.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
