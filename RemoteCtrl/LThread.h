@@ -187,5 +187,6 @@ public:
 
 
 private:
+	std::mutex m_lock;
 	std::vector<LThread> m_threads;
 };
