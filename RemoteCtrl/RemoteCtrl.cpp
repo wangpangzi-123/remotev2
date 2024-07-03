@@ -196,30 +196,7 @@ void func(void* arg)
     }
 }
 
-void test()
-{
-    LQueue<std::string> lstStrings;
-    ULONGLONG tick0 = GetTickCount64(), tick = GetTickCount64(), total = GetTickCount64();
-    while (GetTickCount64() - total <= 1000)
-    {
-        if (GetTickCount64() - tick0 > 13)
-        {
-            lstStrings.PushBack("hello world");
-            tick0 = GetTickCount64();
-        }
-        if (GetTickCount64() - tick > 20)
-        {
-            std::string strTemp;
-            lstStrings.PopFront(strTemp);
-            //std::cout << "pop: " << strTemp << std::endl;
-            tick = GetTickCount64();
-        }
-        //Sleep(1);
-    }
-    std::cout << "size : " << lstStrings.Size() << std::endl;
-    lstStrings.Clear();
-    std::cout << "after clear, size : " << lstStrings.Size() << std::endl;
-}
+
 
 int main()
 {
@@ -227,7 +204,7 @@ int main()
     for (int i = 0; i < 10; i++)
     {
         printf("i = %d\r\n", i);
-        test();
+
     }
     //::exit(0);
 
