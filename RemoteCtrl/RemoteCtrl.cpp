@@ -14,6 +14,8 @@
 #include <conio.h>
 #include "LQueue.h"
 #include <MSWSock.h>
+#include <Ws2tcpip.h>
+
 
 CWinApp theApp;
 using namespace std;
@@ -334,8 +336,7 @@ void iocp()
     CreateIoCompletionPort((HANDLE)sock, hIOCP, 0, 0);
 
     sockaddr_in addr;
-    addr.sin_family = PF_INET;
-    addr.sin_addr.s_addr = inet_addr("0.0.0.0");
+    inet_pton(PF_INET, "0.0.0.0", &addr.sin_addr.s_addr);
     addr.sin_port = htons(9527);
 
     bind(sock, (sockaddr*)&addr, sizeof(addr));

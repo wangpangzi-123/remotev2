@@ -111,7 +111,7 @@ private:
 				if (ret != 0)
 				{
 					CString str;
-					str.Format(_T("thread found warning code ! %d\r\n", ret));
+					//str.Format(_T("thread found warning code ! %d\r\n", ret));
 					OutputDebugString(str);
 				}
 				if (ret < 0)
@@ -182,7 +182,28 @@ public:
 	//线程池分发worker
 	int DispathWorker(const ThreadWorker& worker)
 	{
-		//
+		int index = -1;
+		m_lock.lock();
+		for (size_t i = 0; i < m_threads.size(); i++)
+		{
+			if (m_threads[i].IsIdle())
+			{
+				m_threads[i].UpdateWorker(worker);
+				index = i;
+				break;
+			}
+		}
+		m_lock.unlock();
+		return index;
+	}
+
+	bool CheckThreadValid(size_t index)
+	{
+		if (index < m_threads.size())
+		{
+			return m_threads[index].IsValid();
+		}
+		return false;
 	}
 
 

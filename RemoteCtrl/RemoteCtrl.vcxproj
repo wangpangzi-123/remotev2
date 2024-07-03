@@ -146,6 +146,7 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="LockInfoDialog.h" />
     <ClInclude Include="LQueue.h" />
+    <ClInclude Include="LServer.h" />
     <ClInclude Include="LThread.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="pch.h" />
