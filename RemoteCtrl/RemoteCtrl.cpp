@@ -12,6 +12,7 @@
 #endif
 #include "Command.h"
 #include <conio.h>
+#include "LQueue.h"
 
 CWinApp theApp;
 using namespace std;
@@ -123,27 +124,31 @@ typedef struct IocpParam
     }
 }IOCP_PARAM;
 
+
 // Input/Output Completion Port
 HANDLE hIOCP = INVALID_HANDLE_VALUE;
-void threadQueueEntry(HANDLE hIOCP)
+void threadMain(HANDLE hIOCP)
 {
     std::list<std::string> lstString;
 
     DWORD dwTransferred = 0;
     ULONG_PTR CompletionKey = 0;
     OVERLAPPED* pOverlapped = NULL;
-    while(GetQueuedCompletionStatus(hIOCP, &dwTransferred, &CompletionKey, &pOverlapped, INFINITE))
+    int countPush = 0;
+    int countPop = 0;
+    while (GetQueuedCompletionStatus(hIOCP, &dwTransferred, &CompletionKey, &pOverlapped, INFINITE))
     {
         if ((dwTransferred == 0) || (CompletionKey == NULL))
         {
-            printf("thread is prepare to exit!\r\n");
+            //printf("thread is prepare to exit!\r\n");
             break;
         }
         IOCP_PARAM* pParam = (IOCP_PARAM*)CompletionKey;
         if (pParam->nOperator == IocpListPush)
         {
             lstString.push_back(pParam->strData);
-            std::cout << "push : lstString size = " << lstString.size() << std::endl;
+            //std::cout << "push : lstString size = " << lstString.size() << std::endl;
+            countPush++;
         }
         else if (pParam->nOperator == IocpListPop)
         {
@@ -157,12 +162,23 @@ void threadQueueEntry(HANDLE hIOCP)
             {
                 pParam->cbFunc(pStr);
             }
+            countPop++;
         }
         else if (pParam->nOperator == IocpListEmpty) {
             lstString.clear();
         }
         delete pParam;
     }
+
+    std::cout << "thread: " << "coutPush = " << countPush << " , "
+        << "coutPop = " << countPop << std::endl;
+}
+
+
+
+void threadQueueEntry(HANDLE hIOCP)
+{
+    threadMain(hIOCP);
     _endthread();
 }
 
@@ -180,9 +196,46 @@ void func(void* arg)
     }
 }
 
+void test()
+{
+    LQueue<std::string> lstStrings;
+    ULONGLONG tick0 = GetTickCount64(), tick = GetTickCount64(), total = GetTickCount64();
+    while (GetTickCount64() - total <= 1000)
+    {
+        if (GetTickCount64() - tick0 > 13)
+        {
+            lstStrings.PushBack("hello world");
+            tick0 = GetTickCount64();
+        }
+        if (GetTickCount64() - tick > 20)
+        {
+            std::string strTemp;
+            lstStrings.PopFront(strTemp);
+            //std::cout << "pop: " << strTemp << std::endl;
+            tick = GetTickCount64();
+        }
+        //Sleep(1);
+    }
+    std::cout << "size : " << lstStrings.Size() << std::endl;
+    lstStrings.Clear();
+    std::cout << "after clear, size : " << lstStrings.Size() << std::endl;
+}
+
 int main()
 {
-    if (!Tool::IsAdmin()) return 1;
+    if (!Tool::Init()) return 1;
+    for (int i = 0; i < 10; i++)
+    {
+        printf("i = %d\r\n", i);
+        test();
+    }
+    //::exit(0);
+
+
+
+
+
+    /*
     HANDLE hIOCP = INVALID_HANDLE_VALUE;
     hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 1);
     if (hIOCP == INVALID_HANDLE_VALUE || (hIOCP == NULL))
@@ -195,17 +248,20 @@ int main()
     
     ULONGLONG tick1 = GetTickCount64();
     ULONGLONG tick2 = GetTickCount64();
+    int countPop = 0, countPush = 0;
     while (_kbhit() == 0)
     {
         if (GetTickCount64() - tick2 > 1300)
         {
             BOOL RET = PostQueuedCompletionStatus(hIOCP, sizeof(IOCP_PARAM), (ULONG_PTR)new IOCP_PARAM(IocpListPop, "hello world", func), NULL);
             tick2 = GetTickCount64();
+            countPop++;
         }
         if (GetTickCount64() - tick1 > 2000)
         {
             PostQueuedCompletionStatus(hIOCP, sizeof(IOCP_PARAM), (ULONG_PTR)new IOCP_PARAM(IocpListPush, "hello world"), NULL);
             tick1 = GetTickCount64();
+            countPush++;
         }
         Sleep(1);
     }
@@ -217,7 +273,13 @@ int main()
     }
     CloseHandle(hIOCP);
     printf("exit done!\r\n");
+
+    std::cout << "main: " << "coutPush = " << countPush << " , "
+        << "coutPop = " << countPop << std::endl;
+
     ::exit(0);
+
+    */
 
     /*
     if (Tool::IsAdmin())
