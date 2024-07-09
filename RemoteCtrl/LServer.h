@@ -28,10 +28,21 @@ public:
     std::vector<char> m_buffer; //缓冲区
     ThreadWorker m_worker;      //处理函数
     LServer* m_server;          //服务器对象
+    PCLIENT m_client;
+    WSABUF m_wsabuffer;
 };
 
 template<LOperator>class AcceptOverlapped;
 typedef AcceptOverlapped<LAccept> ACCEPTOVERLAPPED;
+
+template<LOperator>class RecvOverlapped;
+typedef RecvOverlapped<LRecv> RECVOVERLAPPED;
+
+template<LOperator>class SendOverlapped;
+typedef SendOverlapped<LSend> SENDOVERLAPPED;
+
+
+
 class LClient
 {
 public:
@@ -58,10 +69,9 @@ public:
 
     operator LPDWORD();
 
-    operator LPWSABUF()
-    {
-        return &m_wsabuffer;
-    }
+    LPWSABUF RecvWSABuffer();
+
+    LPWSABUF SendWSABuffer();
 
     DWORD& flags() { return m_flags; }
 
@@ -83,13 +93,16 @@ private:
     SOCKET m_sock;
     DWORD  m_received;
     DWORD  m_flags;
+    
     std::shared_ptr<ACCEPTOVERLAPPED> m_overlapped;
+    std::shared_ptr<RECVOVERLAPPED>   m_recv;
+    std::shared_ptr<SENDOVERLAPPED>   m_send;
+
     std::vector<char> m_buffer;
     size_t m_used;
     sockaddr_in m_laddr;
     sockaddr_in m_raddr;
     bool m_isbusy;
-    WSABUF m_wsabuffer;
 };
 
 
@@ -106,8 +119,6 @@ public:
         m_server = NULL;
     }
     int AcceptWorker();
-
-    PCLIENT m_client;
 };
 
 
@@ -117,39 +128,26 @@ template<LOperator>
 class RecvOverlapped : public LOverlapped, ThreadFuncBase
 {
 public:
-    RecvOverlapped()
-        : m_operator(LRecv), m_worker(this, &RecvOverlapped::RecvWorker)
-    {
-        memset(&m_overlapped, 0, sizeof(m_overlapped));
-        m_buffer.resize(1024);
-    }
+    RecvOverlapped();
 
     int RecvWorker()
     {
         int ret = m_client->Recv();
         return ret;
     }
-
-    PCLIENT m_client;
 };
-typedef RecvOverlapped<LRecv> RECVOVERLAPPED;
 
 template<LOperator>
 class SendOverlapped : public LOverlapped, ThreadFuncBase
 {
 public:
-    SendOverlapped()
-        : m_operator(LSend), m_worker(this, &SendOverlapped::SendWorker)
-    {
-        memset(&m_overlapped, 0, sizeof(m_overlapped));
-        m_buffer.resize(1024 * 256);
-    }
+    SendOverlapped();
     int SendWorker()
     {
-        
+        return -1;
     }
 };
-typedef SendOverlapped<LSend> SENDOVERLAPPED;
+
 
 template<LOperator>
 class ErrorOverlapped : public LOverlapped, ThreadFuncBase
@@ -158,6 +156,7 @@ public:
     ErrorOverlapped()
         : m_operator(LError), m_worker(this, &ErrorOverlapped::ErrorWorker)
     {
+
         memset(&m_overlapped, 0, sizeof(m_overlapped));
         m_buffer.resize(1024);
     }
@@ -248,50 +247,8 @@ private:
     }
 
 
-    int threadIocp()
-    {
-        DWORD transferred = 0;
-        ULONG_PTR CompletionKey = 0;
-        OVERLAPPED* lpOverlapped = NULL;
-        if (GetQueuedCompletionStatus(m_hIOCP, &transferred, &CompletionKey, &lpOverlapped, INFINITE))
-        {
-            if ((transferred > 0) && (CompletionKey != 0))
-            {
-                LOverlapped* pOverlapped = CONTAINING_RECORD(lpOverlapped, LOverlapped, m_overlapped);
-                switch (pOverlapped->m_operator)
-                {
-                case LAccept:
-                {
-                    ACCEPTOVERLAPPED* pAccept = (ACCEPTOVERLAPPED*)pOverlapped;
-                    m_pool.DispathWorker(pAccept->m_worker);
-                }
-                break;
+    int threadIocp();
 
-                case LRecv:
-                {
-                    RECVOVERLAPPED* pOver = (RECVOVERLAPPED*)pOverlapped;
-                    m_pool.DispathWorker(pOver->m_worker);
-                }
-                break;
-
-                case LSend:
-                {
-                    SENDOVERLAPPED* pSend = (SENDOVERLAPPED*)pOverlapped;
-                    m_pool.DispathWorker(pSend->m_worker);
-                }
-                break;
-
-                case LError:
-                {
-                    ERROROVERLAPPED* pError = (ERROROVERLAPPED*)pOverlapped;
-                    m_pool.DispathWorker(pError->m_worker);
-                }
-                break;
-                }
-            }
-        }
-        return 0;
-    }
 
 private:
     LThreadPool m_pool;
@@ -301,7 +258,5 @@ private:
     std::map<SOCKET, std::shared_ptr<LClient>> m_client;
     //LQueue<LClient> m_lstClient;
 };
-
-
 
 
