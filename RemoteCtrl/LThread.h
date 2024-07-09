@@ -38,7 +38,7 @@ public:
 		return -1;
 	}
 
-	bool IsValid()
+	bool IsValid() const
 	{
 		return (thiz != NULL) && (func != NULL);
 	}
@@ -81,18 +81,37 @@ public:
 	{
 		if (m_bState == false) return true;
 		m_bState = false;
-		return WaitForSingleObject(m_hThread, INFINITE) == WAIT_OBJECT_0;
+		bool ret = WaitForSingleObject(m_hThread, INFINITE) == WAIT_OBJECT_0;
+		//if (m_worker.load() != NULL)
+		//{
+		//	::ThreadWorker* pWorker = m_worker.load();
+		//	m_worker.store(NULL);
+		//	delete pWorker;
+		//}
+		UpdateWorker();
 	}
 
 	void UpdateWorker(const ::ThreadWorker& worker = ::ThreadWorker())
 	{
-		m_worker.store(worker);
+		/*m_worker.store(worker);*/
+		if (!worker.IsValid())
+		{
+			m_worker.store(NULL);
+			return;
+		}
+		if (m_worker.load() != NULL)
+		{
+			::ThreadWorker* pWorker = m_worker.load();
+			m_worker.store(NULL);
+			delete pWorker;
+		}
+		m_worker.store(new ::ThreadWorker(worker));
 	}
 
 	//true 表示已经空闲， false 表示还没有仍然再工作
 	bool IsIdle()
 	{
-		return !m_worker.load().IsValid();
+		return !m_worker.load()->IsValid();
 	}
 
 
@@ -104,7 +123,7 @@ private:
 	{
 		while (m_bState)
 		{
-			::ThreadWorker worker = m_worker.load();
+			::ThreadWorker worker = *m_worker.load();
 			if (worker.IsValid())
 			{
 				int ret = worker();
@@ -116,7 +135,7 @@ private:
 				}
 				if (ret < 0)
 				{
-					m_worker.store(::ThreadWorker());
+					m_worker.store(NULL);
 				}
 			}
 			else
@@ -139,7 +158,7 @@ private:
 private:
 	HANDLE m_hThread;
 	bool m_bState;
-	std::atomic<::ThreadWorker> m_worker;
+	std::atomic<::ThreadWorker*> m_worker;
 };
 
 class LThreadPool
@@ -148,6 +167,10 @@ public:
 	LThreadPool(size_t size) 
 	{
 		m_threads.resize(size);
+		for (size_t i = 0; i < size; i++)
+		{
+			m_threads[i] = new LThread();
+		}
 	}
 	LThreadPool() {}
 	~LThreadPool(){
@@ -159,7 +182,7 @@ public:
 		bool ret = true;
 		for (size_t i = 0; i < m_threads.size(); i++)
 		{
-			if (!m_threads[i].Start())
+			if (!m_threads[i]->Start())
 			{
 				ret = false;
 				break;
@@ -169,13 +192,14 @@ public:
 		{
 			Stop();
 		}
+		return true;
 	}
 
 	void Stop()
 	{
 		for (size_t i = 0; i < m_threads.size(); i++)
 		{
-			m_threads[i].Stop();
+			m_threads[i]->Stop();
 		}
 	}
 
@@ -186,9 +210,9 @@ public:
 		m_lock.lock();
 		for (size_t i = 0; i < m_threads.size(); i++)
 		{
-			if (m_threads[i].IsIdle())
+			if (m_threads[i]->IsIdle())
 			{
-				m_threads[i].UpdateWorker(worker);
+				m_threads[i]->UpdateWorker(worker);
 				index = i;
 				break;
 			}
@@ -201,7 +225,7 @@ public:
 	{
 		if (index < m_threads.size())
 		{
-			return m_threads[index].IsValid();
+			return m_threads[index]->IsValid();
 		}
 		return false;
 	}
@@ -209,5 +233,5 @@ public:
 
 private:
 	std::mutex m_lock;
-	std::vector<LThread> m_threads;
+	std::vector<LThread*> m_threads;
 };

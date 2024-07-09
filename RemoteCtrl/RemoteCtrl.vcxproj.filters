@@ -83,6 +83,9 @@
     <ClCompile Include="LThread.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="LServer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="RemoteCtrl.rc">
