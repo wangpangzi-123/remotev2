@@ -5,6 +5,7 @@
 #include <iostream>
 #include <list>
 #include "pch.h"
+#include "LThread.h"
 
 
 //线程安全队列（IOCP实现）
@@ -71,7 +72,7 @@ public:
         return ret;
     }
 
-    bool PopFront(T& data)
+    virtual bool PopFront(T& data)
     {
         HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
         IocpParam Param(EQPop, data, hEvent);
@@ -127,7 +128,7 @@ public:
         return ret;
     }
 
-private:
+protected:
     static void threadEntry(void* arg)
     {
         LQueue<T>* thiz = (LQueue<T>*)arg;
@@ -135,7 +136,7 @@ private:
         _endthread();
     }
 
-    void dealParam(PPARAM* pParam)
+    virtual void dealParam(PPARAM* pParam)
     {
         switch (pParam->nOperator)
         {
@@ -225,10 +226,117 @@ private:
         CloseHandle(hTemp);
     }
 
-private:
+protected:
 	std::list<T> m_lstData;
 	HANDLE m_hCompletionPort;
 	HANDLE m_hThread;
     std::atomic<bool> m_lock;
 };
 
+
+//class ThreadFuncBase;
+//typedef int (ThreadFuncBase::* FUNCTYPE)();
+
+template<class T>
+class LSendQueue : public LQueue<T>, ThreadFuncBase
+{
+public:
+    typedef int (ThreadFuncBase::* LCALLBACK)(T& data);
+
+    LSendQueue(ThreadFuncBase* obj, LCALLBACK callback)
+        : LQueue<T>(), m_base(obj), m_callback(callback)
+    {
+        m_thread.Start();
+        m_thread.UpdateWorker(::ThreadWorker(this, (FUNCTYPE)&LSendQueue<T>::threadTick));
+    }
+
+    
+//    virtual bool PopFront(T& data) = delete;
+
+protected:
+    virtual bool PopFront(T& data) {
+        return false;
+    }
+    bool PopFront()
+    {
+        typename LQueue<T>::IocpParam* Param = new typename LQueue<T>::IocpParam(LQueue<T>::EQPop, T());
+        if (LQueue<T>::m_lock)
+        {
+            delete Param;
+            return false;
+        }
+
+        bool ret = PostQueuedCompletionStatus(LQueue<T>::m_hCompletionPort, sizeof(*Param), (ULONG_PTR)&Param, NULL);
+        if (ret == false) {
+            delete Param;
+            return false;
+        }
+        return ret;
+    }
+
+    int threadTick()
+    {
+        if (LQueue<T>::m_lstData.size() > 0)
+        {
+            PopFront();
+        }
+        Sleep(1);
+        return 0;
+    }
+
+    virtual void dealParam(typename LQueue<T>::PPARAM* pParam)
+    {
+        switch (pParam->nOperator)
+        {
+        case LQueue<T>::EQPush:
+        {
+            LQueue<T>::m_lstData.push_back(pParam->Data);
+            delete pParam;
+        }
+        break;
+
+		case LQueue<T>::EQPop:
+		{
+			if (LQueue<T>::m_lstData.size() > 0)
+			{
+				pParam->Data = LQueue<T>::m_lstData.front();
+				if ((m_base->*m_callback)(pParam->Data) == 0)
+				{
+                    LQueue<T>::m_lstData.pop_front();
+				}
+			}
+			delete pParam;
+		}
+		break;
+
+        case LQueue<T>::EQSize:
+        {
+            pParam->nOperator = LQueue<T>::m_lstData.size();
+            if (pParam->hEvent != NULL)
+            {
+                SetEvent(pParam->hEvent);
+            }
+        }
+        break;
+
+        case LQueue<T>::EQClear:
+        {
+            LQueue<T>::m_lstData.clear();
+            delete pParam;
+        }
+        break;
+
+        default:
+            OutputDebugStringA("unknown operator!\r\n");
+            break;
+        }
+    }
+
+private:
+    ThreadFuncBase* m_base;
+    LCALLBACK m_callback;
+    LThread m_thread;
+};
+
+
+typedef LSendQueue<std::vector<char>>::LCALLBACK SENDCALLBACK;

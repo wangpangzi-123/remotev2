@@ -52,9 +52,9 @@ class LThread
 {
 public:
 	LThread()
-	{
-		m_hThread = NULL;
-	}
+		: m_hThread(NULL), m_bState(false)
+	{}
+
 	~LThread()
 	{
 		Stop();

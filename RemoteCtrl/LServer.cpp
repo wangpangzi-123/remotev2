@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "LServer.h"
+#include "Tool.h"
 
 template<LOperator op>
 int  AcceptOverlapped<op>::AcceptWorker()
@@ -32,11 +33,12 @@ int  AcceptOverlapped<op>::AcceptWorker()
 }
 
 LClient::LClient()
-    : m_isbusy(false), 
-	  m_overlapped(new ACCEPTOVERLAPPED()), 
-	  m_flags(0),
-	  m_recv(new RECVOVERLAPPED()),
-	  m_send(new SENDOVERLAPPED())
+	: m_isbusy(false),
+	m_overlapped(new ACCEPTOVERLAPPED()),
+	m_flags(0),
+	m_recv(new RECVOVERLAPPED()),
+	m_send(new SENDOVERLAPPED()),
+	m_vecSend(this, (SENDCALLBACK)&LClient::SendData)
 {
     m_sock = WSASocket(PF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
     m_buffer.resize(1024);
@@ -67,6 +69,40 @@ LPWSABUF LClient::RecvWSABuffer()
 LPWSABUF LClient::SendWSABuffer()
 {
 	return &m_send->m_wsabuffer;
+}
+
+int LClient::Recv()
+{
+	int ret = recv(m_sock, m_buffer.data() + m_used, m_buffer.size() - m_used, 0);
+	if (ret <= 0) return -1;
+	m_used += (size_t)ret;
+	//TODO:½âÎöÊý¾Ý
+	return 0;
+}
+
+int LClient::Send(void* buffer, size_t nSize)
+{
+	std::vector<char> data(nSize);
+	memcpy(data.data(), buffer, nSize);
+	if (m_vecSend.PushBack(data))
+	{
+		return 0;
+	}
+	return -1;
+}
+
+int LClient::SendData(std::vector<char>& data)
+{
+	if (m_vecSend.Size() > 0)
+	{
+		int ret = WSASend(m_sock, SendWSABuffer(), 1, &m_received, m_flags, &m_send->m_overlapped, NULL);
+		if (ret != 0 && (WSAGetLastError() != WSA_IO_PENDING))
+		{
+			Tool::ShowError();
+			return -1;
+		}
+	}
+	return 0;
 }
 
 int LServer::threadIocp()
