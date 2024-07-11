@@ -47,7 +47,7 @@ public:
             m_hThread = (HANDLE)_beginthread(&LQueue<T>::threadEntry, 0, this);
         }
     }
-    ~LQueue()
+    virtual ~LQueue()
     {
         if (m_lock) return;
         m_lock = true;
@@ -250,7 +250,12 @@ public:
         m_thread.UpdateWorker(::ThreadWorker(this, (FUNCTYPE)&LSendQueue<T>::threadTick));
     }
 
-    
+    virtual ~LSendQueue() {
+        
+        m_base = NULL;
+        m_callback = NULL;
+        m_thread.Stop();
+    }
 //    virtual bool PopFront(T& data) = delete;
 
 protected:
@@ -276,11 +281,14 @@ protected:
 
     int threadTick()
     {
+        if (WaitForSingleObject(LQueue<T>::m_hThread, 0) != WAIT_TIMEOUT)
+        {
+            return -1;
+        }
         if (LQueue<T>::m_lstData.size() > 0)
         {
             PopFront();
         }
-        Sleep(1);
         return 0;
     }
 

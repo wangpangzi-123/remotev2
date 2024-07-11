@@ -28,8 +28,11 @@ public:
     std::vector<char> m_buffer; //缓冲区
     ThreadWorker m_worker;      //处理函数
     LServer* m_server;          //服务器对象
-    PCLIENT m_client;
+    LClient* m_client;
     WSABUF m_wsabuffer;
+    virtual ~LOverlapped() {
+        m_buffer.clear();
+    }
 };
 
 template<LOperator>class AcceptOverlapped;
@@ -51,6 +54,11 @@ public:
     ~LClient()
     {
         closesocket(m_sock);
+        m_recv.reset();
+        m_send.reset();
+        m_overlapped.reset();
+        m_buffer.clear();
+        m_vecSend.Clear();
     }
 
     void SetOverlapped(PCLIENT& ptr);
@@ -184,7 +192,7 @@ public:
         m_addr.sin_family = AF_INET;
         inet_pton(AF_INET, ip.c_str(), &m_addr.sin_addr.s_addr);
     }
-    ~LServer() {}
+    ~LServer();
 
     bool StartService()
     {

@@ -6,7 +6,7 @@ template<LOperator op>
 int  AcceptOverlapped<op>::AcceptWorker()
 {
     INT lLength = 0, rLength = 0;
-    if (*(LPDWORD)*m_client.get() > 0)
+    if (*(LPDWORD)*m_client > 0)
     {
         GetAcceptExSockaddrs
         (*m_client, 0,
@@ -34,10 +34,10 @@ int  AcceptOverlapped<op>::AcceptWorker()
 
 LClient::LClient()
 	: m_isbusy(false),
-	m_overlapped(new ACCEPTOVERLAPPED()),
 	m_flags(0),
 	m_recv(new RECVOVERLAPPED()),
 	m_send(new SENDOVERLAPPED()),
+	m_overlapped(new ACCEPTOVERLAPPED()),
 	m_vecSend(this, (SENDCALLBACK)&LClient::SendData)
 {
     m_sock = WSASocket(PF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
@@ -48,7 +48,9 @@ LClient::LClient()
 
 void LClient::SetOverlapped(PCLIENT& ptr)
 {
-    m_overlapped->m_client = ptr;
+    m_overlapped->m_client = ptr.get();
+	m_recv->m_client = ptr.get();
+	m_send->m_client = ptr.get();
 }
 
 
@@ -103,6 +105,19 @@ int LClient::SendData(std::vector<char>& data)
 		}
 	}
 	return 0;
+}
+
+LServer::~LServer()
+{
+	closesocket(m_sock);
+	std::map<SOCKET, PCLIENT>::iterator it = m_client.begin();
+	for (; it != m_client.end(); it++)
+	{
+		it->second.reset();
+	}
+	m_client.clear();
+	CloseHandle(m_hIOCP);
+	m_pool.Stop();
 }
 
 int LServer::threadIocp()

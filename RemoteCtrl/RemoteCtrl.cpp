@@ -201,15 +201,11 @@ void func(void* arg)
 }
 
 
-
+void iocp();
 int main()
 {
     if (!Tool::Init()) return 1;
-    for (int i = 0; i < 10; i++)
-    {
-        printf("i = %d\r\n", i);
-
-    }
+    iocp();
     //::exit(0);
 
 
